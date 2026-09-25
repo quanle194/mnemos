@@ -1,75 +1,78 @@
 #!/usr/bin/env bash
-# Boot the production Compose stack locally (fake providers), run Playwright E2E scenarios 1-10 and the
-# learning eval against it, then tear it down. Usage: scripts/e2e.sh [--keep] [--no-build] [--skip-eval]
+# Boot the production Compose stack locally (APP_ENV=production, deterministic fake providers), run the
+# Playwright E2E scenarios 1-10 and the learning eval against it through the Caddy edge, then tear it down.
+#
+# Usage: scripts/e2e.sh [--keep] [--no-build] [--skip-eval] [--http-port PORT]
+# Env:   MNEMOS_BUILD_CA_FILE (extra CA for image builds behind TLS-intercepting proxies)
+#        E2E_PROJECT (compose project, default mnemos-e2e)
 set -Eeuo pipefail
+# shellcheck source=scripts/lib/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+install_err_trap
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
-
-KEEP=0 BUILD=1 EVAL=1
-for arg in "$@"; do
-  case "$arg" in
-    --keep) KEEP=1 ;;
-    --no-build) BUILD=0 ;;
-    --skip-eval) EVAL=0 ;;
-    -h|--help) sed -n '2,4p' "$0"; exit 0 ;;
-    *) echo "unknown argument: $arg" >&2; exit 2 ;;
+usage() { sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'; }
+KEEP=0 BUILD=1 EVAL=1 HTTP_PORT="${E2E_HTTP_PORT:-18080}"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --keep) KEEP=1; shift ;;
+    --no-build) BUILD=0; shift ;;
+    --skip-eval) EVAL=0; shift ;;
+    --http-port) HTTP_PORT=${2:?}; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) die "unknown argument: $1 (see --help)" ;;
   esac
 done
 
-PROJECT="${E2E_PROJECT:-mnemos-e2e}"
-HTTP_PORT="${E2E_HTTP_PORT:-18080}"
-ENV_FILE="$(mktemp -t mnemos-e2e-env.XXXXXX)"
-SECRET="$(openssl rand -hex 24)"
-cat >"$ENV_FILE" <<ENV
-APP_ENV=production
-LOG_LEVEL=INFO
-SITE_ADDRESS=:80
-HTTP_PORT=${HTTP_PORT}
-HTTPS_PORT=${E2E_HTTPS_PORT:-18443}
-PUBLIC_WEB_URL=http://localhost:${HTTP_PORT}
-PUBLIC_API_URL=http://localhost:${HTTP_PORT}/api
-POSTGRES_PASSWORD=$(openssl rand -hex 16)
-API_BOOTSTRAP_SECRET=${SECRET}
-API_KEY_PEPPER=$(openssl rand -hex 24)
-LLM_PROVIDER=fake
-EMBEDDING_PROVIDER=fake
-EMBEDDING_MODEL=fake-embedding
-EMBEDDING_DIMENSIONS=384
-MNEMOS_VERSION=e2e
-ENV
+require_docker
+require_cmd curl openssl npx uv
+MNEMOS_PROJECT="${E2E_PROJECT:-mnemos-e2e}"
+WORKDIR=$(mktemp -d -t mnemos-e2e.XXXXXX)
+MNEMOS_ENV_FILE="$WORKDIR/e2e.env"
+export MNEMOS_PROJECT MNEMOS_ENV_FILE
 
-COMPOSE=(docker compose -p "$PROJECT" -f infra/docker-compose.prod.yml --env-file "$ENV_FILE")
+"$MNEMOS_ROOT/scripts/init-env.sh" --output "$MNEMOS_ENV_FILE" --http-port "$HTTP_PORT" \
+  --https-port "$((HTTP_PORT + 363))" --backup-dir "$WORKDIR/backups" >/dev/null
+env_set "$MNEMOS_ENV_FILE" MNEMOS_VERSION e2e
+SECRET=$(env_get API_BOOTSTRAP_SECRET)
+BASE="http://localhost:${HTTP_PORT}"
+
 cleanup() {
   local code=$?
-  if [[ $code -ne 0 ]]; then "${COMPOSE[@]}" ps || true; "${COMPOSE[@]}" logs --tail=80 api worker migrate || true; fi
-  if [[ $KEEP -eq 0 ]]; then "${COMPOSE[@]}" down -v --remove-orphans >/dev/null 2>&1 || true; rm -f "$ENV_FILE"; fi
-  exit $code
+  if [[ $code -ne 0 ]]; then
+    compose ps || true
+    compose logs --tail=60 api worker migrate caddy || true
+  fi
+  if [[ $KEEP -eq 0 ]]; then
+    compose down -v --remove-orphans >/dev/null 2>&1 || true
+    rm -rf "$WORKDIR"
+  else
+    log "stack kept: project=$MNEMOS_PROJECT env=$MNEMOS_ENV_FILE base=$BASE"
+  fi
+  exit "$code"
 }
 trap cleanup EXIT
 
-echo "==> booting stack $PROJECT on :$HTTP_PORT"
-if [[ $BUILD -eq 1 ]]; then "${COMPOSE[@]}" build; fi
-"${COMPOSE[@]}" up -d --wait --wait-timeout 300
+banner "boot production stack ($MNEMOS_PROJECT) on $BASE"
+[[ $BUILD -eq 1 ]] && compose build
+compose up -d --wait --wait-timeout 300
+for _ in $(seq 1 60); do curl -fsS "$BASE/api/health/ready" >/dev/null 2>&1 && break; sleep 2; done
+curl -fsS "$BASE/api/health/ready" >/dev/null || die "stack not ready"
+ok "stack ready"
 
-BASE="http://localhost:${HTTP_PORT}"
-for _ in $(seq 1 60); do
-  curl -fsS "$BASE/api/health/ready" >/dev/null 2>&1 && break
-  sleep 2
-done
-curl -fsS "$BASE/api/health/ready" >/dev/null
+mapfile -t FILES < <(compose_files)
+COMPOSE_CMD="docker compose -p $MNEMOS_PROJECT ${FILES[*]} --env-file $MNEMOS_ENV_FILE"
+mkdir -p "$MNEMOS_ROOT/artifacts"
 
-mkdir -p artifacts
-echo "==> Playwright E2E"
+banner "Playwright E2E (scenarios 1-10 + dashboard)"
 (
-  cd e2e
-  E2E_BASE_URL="$BASE" API_BOOTSTRAP_SECRET="$SECRET" \
-  E2E_COMPOSE="docker compose -p $PROJECT -f $ROOT/infra/docker-compose.prod.yml --env-file $ENV_FILE" \
-  E2E_JSON_REPORT="$ROOT/artifacts/e2e-results.json" npx playwright test
+  cd "$MNEMOS_ROOT/e2e"
+  E2E_BASE_URL="$BASE" API_BOOTSTRAP_SECRET="$SECRET" E2E_COMPOSE="$COMPOSE_CMD" \
+    E2E_JSON_REPORT="$MNEMOS_ROOT/artifacts/e2e-results.json" npx playwright test
 )
+ok "E2E passed"
 
 if [[ $EVAL -eq 1 ]]; then
-  echo "==> learning eval"
-  uv run mnemos-eval --url "$BASE/api" --secret "$SECRET" --output artifacts/eval-report.json
+  banner "learning eval (Run A -> learn -> Run B) against the production-mode stack"
+  (cd "$MNEMOS_ROOT" && uv run mnemos-eval --url "$BASE/api" --secret "$SECRET" --output artifacts/eval-report.json)
+  ok "eval passed"
 fi
-echo "==> E2E OK"

@@ -6,7 +6,9 @@ SHELL := /bin/bash
 UV            ?= uv
 ENV_FILE      ?= .env
 PROJECT       ?= mnemos
-COMPOSE_PROD  := docker compose -p $(PROJECT) -f infra/docker-compose.prod.yml --env-file $(ENV_FILE)
+COMPOSE_PROD  := MNEMOS_ENV_FILE=$(abspath $(ENV_FILE)) docker compose -p $(PROJECT) -f infra/docker-compose.prod.yml \
+                 $(if $(MNEMOS_BUILD_CA_FILE),-f infra/docker-compose.build-ca.yml) --env-file $(ENV_FILE)
+SCRIPT_ARGS   := --env-file $(ENV_FILE) --project $(PROJECT)
 COMPOSE_DEV   := docker compose -p $(PROJECT)-dev -f infra/docker-compose.dev.yml
 TEST_PG_PORT  ?= 55432
 TEST_REDIS_PORT ?= 56379
@@ -15,7 +17,7 @@ TEST_ENV      := MNEMOS_TEST_ADMIN_DSN=postgresql://mnemos:mnemos@127.0.0.1:$(TE
 EVAL_URL      ?= http://localhost:18080/api
 NODE_DIRS     := web sdk/typescript e2e
 
-.PHONY: help setup dev dev-deps lint format typecheck test test-db test-db-down test-integration test-e2e eval \
+.PHONY: help setup env deploy dev dev-deps lint format typecheck test test-db test-db-down test-integration test-e2e eval \
         build up down migrate smoke backup backup-test logs ps clean openapi
 
 help: ## Show this help
@@ -87,6 +89,12 @@ build: ## Build production images, dashboard bundle and TS SDK
 	cd sdk/typescript && npm run build
 	$(COMPOSE_PROD) build
 
+env: ## Create .env with generated internal secrets (scripts/init-env.sh; provider keys stay operator-supplied)
+	scripts/init-env.sh --output $(ENV_FILE)
+
+deploy: ## Full deploy: preflight, backup, build, migrate, start, health, smoke (scripts/deploy.sh)
+	scripts/deploy.sh $(SCRIPT_ARGS)
+
 up: ## Start the production stack (uses $(ENV_FILE))
 	$(COMPOSE_PROD) up -d --wait
 
@@ -96,14 +104,14 @@ down: ## Stop the production stack (volumes are kept)
 migrate: ## Apply database migrations (production stack)
 	$(COMPOSE_PROD) run --rm migrate
 
-smoke: ## Production smoke test (ingest -> learn -> retrieve) against BASE_URL
-	scripts/smoke-prod.sh
+smoke: ## Production smoke test (edge, health, ingest -> learn -> retrieve, closed ports)
+	scripts/smoke-prod.sh $(SCRIPT_ARGS) $(if $(BASE_URL),--base-url $(BASE_URL))
 
 backup: ## Take a verified backup of the production database
-	scripts/backup.sh
+	scripts/backup.sh --verify $(SCRIPT_ARGS)
 
 backup-test: ## Backup + isolated restore verification
-	scripts/backup-test.sh
+	scripts/backup-test.sh $(SCRIPT_ARGS)
 
 logs: ## Tail production logs
 	$(COMPOSE_PROD) logs -f --tail=100

@@ -1,0 +1,270 @@
+{
+  "name": "learning-transfer-eval",
+  "run_id": "7dfff242",
+  "api_url": "http://localhost:18080/api",
+  "workspace_id": "01a0da68-193e-7173-be61-3cd8733481bd",
+  "duration_s": 2.59,
+  "summary": {
+    "families": 5,
+    "measured": {
+      "run_b_task_success_rate": 1.0,
+      "run_b_repeated_error_rate": 0.0,
+      "control_repeated_error_rate": 1.0,
+      "relevant_memory_recall": 1.0,
+      "mean_precision_at_k": 1.0,
+      "false_memory_rate": 0.0,
+      "stale_memory_use_rate": 0.0,
+      "run_b_tool_calls_total": 5,
+      "control_tool_calls_total": 22,
+      "context_latency_ms_p50": 22.55,
+      "context_latency_ms_p95": 33.6,
+      "learning_latency_ms_p50": 368.68,
+      "learning_latency_ms_p95": 379.39,
+      "memories_learned_active": 5,
+      "tool_call_reduction": 0.773
+    },
+    "estimated": {
+      "note": "token counts are chars/4 estimates of the simulated agent transcript (no real LLM calls); they are NOT measured token or cost savings",
+      "run_b_tokens_total_est": 1120,
+      "control_tokens_total_est": 563,
+      "token_change_ratio_est": 1.989
+    },
+    "passed": true
+  },
+  "families": [
+    {
+      "family": "deploy-migrations",
+      "run_a": {
+        "success": true,
+        "used_memory": false,
+        "repeated_error": true,
+        "errors": 1,
+        "tool_calls": 5,
+        "est_tokens": 117
+      },
+      "run_b": {
+        "success": true,
+        "used_memory": true,
+        "repeated_error": false,
+        "errors": 0,
+        "tool_calls": 1,
+        "est_tokens": 216
+      },
+      "control_b_without_memory": {
+        "success": true,
+        "used_memory": false,
+        "repeated_error": true,
+        "errors": 1,
+        "tool_calls": 5,
+        "est_tokens": 117
+      },
+      "learned_memories": [
+        {
+          "id": "01a0da68-1a8a-72d3-b000-8200a249647f",
+          "status": "active",
+          "type": "lesson",
+          "title": "Lesson: Deploy billing-api to staging"
+        }
+      ],
+      "run_b_context": {
+        "selected": [
+          "01a0da68-1a8a-72d3-b000-8200a249647f"
+        ],
+        "token_estimate": 165,
+        "trace_id": "01a0da68-1be3-7263-841e-7c777b98cebb"
+      },
+      "relevant_recalled": true,
+      "precision": 1.0,
+      "false_memory_served": false,
+      "stale_memory_served": false
+    },
+    {
+      "family": "web-install",
+      "run_a": {
+        "success": true,
+        "used_memory": false,
+        "repeated_error": true,
+        "errors": 1,
+        "tool_calls": 4,
+        "est_tokens": 103
+      },
+      "run_b": {
+        "success": true,
+        "used_memory": true,
+        "repeated_error": false,
+        "errors": 0,
+        "tool_calls": 1,
+        "est_tokens": 222
+      },
+      "control_b_without_memory": {
+        "success": true,
+        "used_memory": false,
+        "repeated_error": true,
+        "errors": 1,
+        "tool_calls": 4,
+        "est_tokens": 103
+      },
+      "learned_memories": [
+        {
+          "id": "01a0da68-1c4e-7ae1-aefb-4c28099f90e0",
+          "status": "active",
+          "type": "procedure",
+          "title": "How to: Install dependencies for the admin dashboard web app"
+        }
+      ],
+      "run_b_context": {
+        "selected": [
+          "01a0da68-1c4e-7ae1-aefb-4c28099f90e0"
+        ],
+        "token_estimate": 170,
+        "trace_id": "01a0da68-1d9e-7f22-9fb4-cd2c38429fee"
+      },
+      "relevant_recalled": true,
+      "precision": 1.0,
+      "false_memory_served": false,
+      "stale_memory_served": false
+    },
+    {
+      "family": "docker-build",
+      "run_a": {
+        "success": true,
+        "used_memory": false,
+        "repeated_error": true,
+        "errors": 1,
+        "tool_calls": 5,
+        "est_tokens": 121
+      },
+      "run_b": {
+        "success": true,
+        "used_memory": true,
+        "repeated_error": false,
+        "errors": 0,
+        "tool_calls": 1,
+        "est_tokens": 234
+      },
+      "control_b_without_memory": {
+        "success": true,
+        "used_memory": false,
+        "repeated_error": true,
+        "errors": 1,
+        "tool_calls": 5,
+        "est_tokens": 121
+      },
+      "learned_memories": [
+        {
+          "id": "01a0da68-1e0d-7a80-be09-aa0473f632c0",
+          "status": "active",
+          "type": "lesson",
+          "title": "Lesson: Build the docker image for the search-indexer service"
+        }
+      ],
+      "run_b_context": {
+        "selected": [
+          "01a0da68-1e0d-7a80-be09-aa0473f632c0"
+        ],
+        "token_estimate": 176,
+        "trace_id": "01a0da68-1f62-7153-8da0-d365229aa484"
+      },
+      "relevant_recalled": true,
+      "precision": 1.0,
+      "false_memory_served": false,
+      "stale_memory_served": false
+    },
+    {
+      "family": "partner-api-auth",
+      "run_a": {
+        "success": true,
+        "used_memory": false,
+        "repeated_error": true,
+        "errors": 1,
+        "tool_calls": 4,
+        "est_tokens": 116
+      },
+      "run_b": {
+        "success": true,
+        "used_memory": true,
+        "repeated_error": false,
+        "errors": 0,
+        "tool_calls": 1,
+        "est_tokens": 230
+      },
+      "control_b_without_memory": {
+        "success": true,
+        "used_memory": false,
+        "repeated_error": true,
+        "errors": 1,
+        "tool_calls": 4,
+        "est_tokens": 115
+      },
+      "learned_memories": [
+        {
+          "id": "01a0da68-1fb6-7063-a011-5424e25ff6e4",
+          "status": "active",
+          "type": "procedure",
+          "title": "How to: Fetch invoices from the partner billing API"
+        }
+      ],
+      "run_b_context": {
+        "selected": [
+          "01a0da68-1fb6-7063-a011-5424e25ff6e4"
+        ],
+        "token_estimate": 173,
+        "trace_id": "01a0da68-211b-70b3-8620-6c62a3116ad0"
+      },
+      "relevant_recalled": true,
+      "precision": 1.0,
+      "false_memory_served": false,
+      "stale_memory_served": false
+    },
+    {
+      "family": "bulk-export",
+      "run_a": {
+        "success": true,
+        "used_memory": false,
+        "repeated_error": true,
+        "errors": 1,
+        "tool_calls": 4,
+        "est_tokens": 108
+      },
+      "run_b": {
+        "success": true,
+        "used_memory": true,
+        "repeated_error": false,
+        "errors": 0,
+        "tool_calls": 1,
+        "est_tokens": 218
+      },
+      "control_b_without_memory": {
+        "success": true,
+        "used_memory": false,
+        "repeated_error": true,
+        "errors": 1,
+        "tool_calls": 4,
+        "est_tokens": 107
+      },
+      "learned_memories": [
+        {
+          "id": "01a0da68-2180-7950-9dbd-27ead4917889",
+          "status": "active",
+          "type": "lesson",
+          "title": "Lesson: Export the full customers table to the data lake"
+        }
+      ],
+      "run_b_context": {
+        "selected": [
+          "01a0da68-2180-7950-9dbd-27ead4917889"
+        ],
+        "token_estimate": 166,
+        "trace_id": "01a0da68-22ec-7fd1-b856-67eac8404188"
+      },
+      "relevant_recalled": true,
+      "precision": 1.0,
+      "false_memory_served": false,
+      "stale_memory_served": false
+    }
+  ],
+  "bad_memory_ids": [
+    "01a0da68-19bf-7170-b16d-d0bb99f00dca",
+    "01a0da68-1a09-7711-9aac-d2664a6fdbda"
+  ]
+}
