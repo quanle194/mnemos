@@ -59,3 +59,18 @@ def test_merge_contents_preserves_distinct_sentences() -> None:
 def test_build_tsquery_sanitizes() -> None:
     assert build_tsquery("Deploy the billing-api; DROP TABLE x --") == "deploy | billing | api | drop | table"
     assert build_tsquery("the a of") == ""
+
+
+def test_tracing_disabled_without_endpoint() -> None:
+    from app.observability.tracing import current_trace_id, setup_tracing
+
+    assert setup_tracing(Settings(), "t") is False
+    assert current_trace_id() is None
+
+
+def test_tracing_enabled_with_endpoint() -> None:
+    from fastapi import FastAPI
+
+    from app.observability.tracing import setup_tracing
+
+    assert setup_tracing(Settings(otel_exporter_otlp_endpoint="http://127.0.0.1:4318"), "t", app=FastAPI()) is True

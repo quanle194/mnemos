@@ -15,6 +15,7 @@ from app.api.routers import admin, conflicts, context, dreams, events, experienc
 from app.config import Settings, get_settings
 from app.container import Container
 from app.observability.logging import configure_logging
+from app.observability.tracing import setup_tracing
 
 
 def create_app(settings: Settings | None = None, container: Container | None = None) -> FastAPI:
@@ -24,6 +25,7 @@ def create_app(settings: Settings | None = None, container: Container | None = N
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.container = container or Container.build(settings)
+        setup_tracing(settings, "mnemos-api", engine=app.state.container.engine)
         try:
             yield
         finally:
@@ -53,6 +55,7 @@ def create_app(settings: Settings | None = None, container: Container | None = N
     app.add_middleware(BodySizeLimitMiddleware, max_bytes=settings.max_request_bytes)
     for r in (health, admin, events, experiences, memories, context, conflicts, dreams, ops):
         app.include_router(r.router)
+    setup_tracing(settings, "mnemos-api", app=app)
     return app
 
 

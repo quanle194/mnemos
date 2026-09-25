@@ -20,6 +20,10 @@ def _add_context(_: Any, __: str, event: dict[str, Any]) -> dict[str, Any]:
         event["request_id"] = rid
     if (jid := job_id_var.get()) and "job_id" not in event:
         event["job_id"] = jid
+    from app.observability.tracing import current_trace_id
+
+    if (tid := current_trace_id()) and "trace_id" not in event:
+        event["trace_id"] = tid
     return event
 
 

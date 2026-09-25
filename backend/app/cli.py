@@ -80,7 +80,10 @@ def worker(health_port: int = typer.Option(8001, envvar="WORKER_HEALTH_PORT")) -
     configure_logging(settings.log_level, settings.log_json, "mnemos-worker")
 
     async def main() -> None:
+        from app.observability.tracing import setup_tracing
+
         container = Container.build(settings)
+        setup_tracing(settings, "mnemos-worker", engine=container.engine)
         try:
             await run_worker(container, health_port)
         finally:

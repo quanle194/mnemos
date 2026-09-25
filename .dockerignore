@@ -1,0 +1,60 @@
+# Build context for backend/Dockerfile and web/Dockerfile (both use the repository root as context).
+# Keep the context small and never ship secrets, local state or build artefacts into images.
+
+# VCS / editor / OS noise
+.git
+.gitignore
+.gitattributes
+.github
+.idea
+.vscode
+**/.DS_Store
+**/*.swp
+
+# Secrets and local environment files (never bake into images)
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+infra/.env*
+*.pem
+*.key
+
+# Python caches / virtualenvs / tooling state
+**/.venv
+**/venv
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.coverage
+**/htmlcov
+**/*.egg-info
+**/build
+
+# Node / web build output
+**/node_modules
+**/dist
+**/.vite
+**/coverage
+**/*.tsbuildinfo
+e2e/test-results
+e2e/playwright-report
+
+# Runtime data, reports and backups
+artifacts
+backups
+**/*.dump
+**/*.sql.gz
+
+# Not needed inside images
+backend/tests
+docs
+claude
+e2e
+infra
+scripts
+*.md
+!**/README.md

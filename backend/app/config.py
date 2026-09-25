@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     max_request_bytes: int = 256_000
     max_text_field_chars: int = 20_000
     rate_limit_per_minute: int = 600
+    bootstrap_rate_limit: int = 20
 
     # learning policy
     min_candidate_confidence: float = 0.3

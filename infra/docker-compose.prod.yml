@@ -1,0 +1,386 @@
+# Mnemos production stack for a single Ubuntu VPS (see docs/RUNBOOK.md, ADR 0007).
+#
+# Always run through the scripts (they pass the right project/env file), or manually:
+#   docker compose -p mnemos -f infra/docker-compose.prod.yml --env-file .env <command>
+#
+# Topology
+#   caddy  (edge)            the ONLY service publishing host ports: ${HTTP_PORT}:80, ${HTTPS_PORT}:443
+#   web    (edge)            static dashboard, unprivileged nginx :8080
+#   api    (edge+backend)    FastAPI :8000 (served under /api by Caddy)
+#   worker (backend+egress)  jobs + scheduler, health/metrics :8001 (internal)
+#   migrate(backend)         one-shot `mnemos migrate`; api/worker start only after it succeeds
+#   postgres/redis (backend) internal network only (`internal: true`), never published
+#   mcp    [profile mcp]     MCP streamable-HTTP server :8765, routed at /mcp when MCP_ROUTE=enabled
+#   ollama [profile ollama]  optional local LLM/embedding runtime (http://ollama:11434)
+#
+# Secrets are interpolated from the env file with ${VAR:?} so a missing secret fails fast.
+# Resource limits (deploy.resources.limits) are sized for a 4 vCPU / 8 GB VPS; tune via the *_CPUS / *_MEM_LIMIT
+# variables in the env file (documented in infra/env.production.example).
+
+name: mnemos
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${LOG_MAX_SIZE:-10m}
+    max-file: "${LOG_MAX_FILE:-5}"
+
+x-app-build: &app-build
+  context: ..
+  dockerfile: backend/Dockerfile
+  args:
+    VERSION: ${MNEMOS_VERSION:-latest}
+    VCS_REF: ${MNEMOS_VCS_REF:-unknown}
+    BUILD_DATE: ${MNEMOS_BUILD_DATE:-unknown}
+
+x-app-env: &app-env
+  APP_ENV: ${APP_ENV:-production}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  LOG_JSON: "true"
+  MNEMOS_VERSION: ${MNEMOS_VERSION:-latest}
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mnemos}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-mnemos}
+  REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0
+  API_BOOTSTRAP_SECRET: ${API_BOOTSTRAP_SECRET:?API_BOOTSTRAP_SECRET is required (>=24 random chars)}
+  API_KEY_PEPPER: ${API_KEY_PEPPER:?API_KEY_PEPPER is required (random; never change it after first deploy)}
+  PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:?PUBLIC_WEB_URL is required}
+  PUBLIC_API_URL: ${PUBLIC_API_URL:?PUBLIC_API_URL is required}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+  # Loopback/service names are appended so container healthchecks pass the TrustedHost check.
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*},localhost,127.0.0.1,api
+  LLM_PROVIDER: ${LLM_PROVIDER:-fake}
+  LLM_BASE_URL: ${LLM_BASE_URL:-}
+  LLM_API_KEY: ${LLM_API_KEY:-}
+  LLM_MODEL: ${LLM_MODEL:-}
+  EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-fake}
+  EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-}
+  EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-fake-embedding}
+  EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-384}
+  WORKER_HEALTH_PORT: "8001"
+
+x-app: &app
+  image: ${MNEMOS_IMAGE_PREFIX:-mnemos}/api:${MNEMOS_VERSION:-latest}
+  build: *app-build
+  # Optional tuning variables (WORKER_CONCURRENCY, RATE_LIMIT_PER_MINUTE, DREAM_*, ...) flow in from the env file;
+  # the explicit `environment` block above always wins.
+  env_file:
+    - path: ${MNEMOS_ENV_FILE:-../.env}
+      required: false
+  environment: *app-env
+  restart: unless-stopped
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging: *logging
+
+services:
+  # ------------------------------------------------------------------------------------------ edge
+  caddy:
+    image: ${CADDY_IMAGE:-caddy:2.8-alpine}
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_started
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?SITE_ADDRESS is required (a domain name for HTTPS, or :80 for HTTP-only)}
+      ACME_EMAIL_OPTION: ${ACME_EMAIL:+email ${ACME_EMAIL}}
+      MCP_ROUTE: ${MCP_ROUTE:-disabled}
+      MAX_REQUEST_BODY: ${MAX_REQUEST_BODY:-2MB}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-private_ranges}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "${CADDY_CPUS:-0.5}"
+          memory: ${CADDY_MEM_LIMIT:-256m}
+    networks:
+      - edge
+    logging: *logging
+
+  web:
+    image: ${MNEMOS_IMAGE_PREFIX:-mnemos}/web:${MNEMOS_VERSION:-latest}
+    build:
+      context: ..
+      dockerfile: web/Dockerfile
+      args:
+        VERSION: ${MNEMOS_VERSION:-latest}
+        VCS_REF: ${MNEMOS_VCS_REF:-unknown}
+        BUILD_DATE: ${MNEMOS_BUILD_DATE:-unknown}
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "${WEB_CPUS:-0.5}"
+          memory: ${WEB_MEM_LIMIT:-128m}
+    networks:
+      - edge
+    logging: *logging
+
+  # ------------------------------------------------------------------------------------------ application
+  migrate:
+    <<: *app
+    command: ["migrate"]
+    restart: "no"
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512m
+    networks:
+      - backend
+
+  api:
+    <<: *app
+    command: ["api", "--host", "0.0.0.0", "--port", "8000", "--workers", "${API_WORKERS:-2}"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "mnemos-healthcheck", "http://127.0.0.1:8000/health/ready"]
+      interval: 15s
+      timeout: 6s
+      retries: 5
+      start_period: 30s
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "${API_CPUS:-1.5}"
+          memory: ${API_MEM_LIMIT:-1g}
+    networks:
+      - edge
+      - backend
+
+  worker:
+    <<: *app
+    command: ["worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8001"
+    healthcheck:
+      test: ["CMD", "mnemos-healthcheck", "http://127.0.0.1:8001/health/live", "http://127.0.0.1:8001/health/ready"]
+      interval: 20s
+      timeout: 8s
+      retries: 5
+      start_period: 30s
+    stop_grace_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "${WORKER_CPUS:-1.5}"
+          memory: ${WORKER_MEM_LIMIT:-1g}
+    networks:
+      - backend
+      - egress
+
+  mcp:
+    <<: *app
+    profiles: ["mcp"]
+    entrypoint: ["mnemos-mcp"]
+    command: []
+    # The MCP server only talks to the API over HTTP; it gets no database/secret environment.
+    env_file: []
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      MNEMOS_URL: http://api:8000
+      MNEMOS_API_KEY: ${MNEMOS_MCP_API_KEY:-}
+      MNEMOS_WORKSPACE_ID: ${MNEMOS_MCP_WORKSPACE_ID:-}
+      MNEMOS_MCP_TRANSPORT: streamable-http
+      MNEMOS_MCP_HOST: 0.0.0.0
+      MNEMOS_MCP_PORT: "8765"
+    depends_on:
+      api:
+        condition: service_healthy
+    expose:
+      - "8765"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; socket.create_connection(('127.0.0.1', 8765), 3).close()"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "${MCP_CPUS:-0.5}"
+          memory: ${MCP_MEM_LIMIT:-384m}
+    networks:
+      - edge
+
+  # ------------------------------------------------------------------------------------------ data (internal only)
+  postgres:
+    image: ${POSTGRES_IMAGE:-pgvector/pgvector:0.8.0-pg16}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mnemos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-mnemos}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${PG_SHARED_BUFFERS:-512MB}
+      - -c
+      - effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-1536MB}
+      - -c
+      - work_mem=${PG_WORK_MEM:-16MB}
+      - -c
+      - maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-256MB}
+      - -c
+      - max_connections=${PG_MAX_CONNECTIONS:-100}
+      - -c
+      - log_min_duration_statement=${PG_LOG_MIN_DURATION_MS:-1000}
+      - -c
+      - log_checkpoints=on
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    shm_size: ${PG_SHM_SIZE:-256m}
+    # -h 127.0.0.1 keeps the check red while the init-time (socket-only) server is running.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    stop_grace_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "${POSTGRES_CPUS:-2.0}"
+          memory: ${POSTGRES_MEM_LIMIT:-2g}
+    networks:
+      - backend
+    logging: *logging
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7.4-alpine}
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory
+      - ${REDIS_MAXMEMORY:-256mb}
+      - --maxmemory-policy
+      - ${REDIS_MAXMEMORY_POLICY:-allkeys-lru}
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$${REDIS_PASSWORD}\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "${REDIS_CPUS:-0.5}"
+          memory: ${REDIS_MEM_LIMIT:-384m}
+    networks:
+      - backend
+    logging: *logging
+
+  # ------------------------------------------------------------------------------------------ optional local models
+  ollama:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:0.12.3}
+    profiles: ["ollama"]
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "${OLLAMA_CPUS:-2.0}"
+          memory: ${OLLAMA_MEM_LIMIT:-6g}
+    networks:
+      - backend
+      - egress
+    logging: *logging
+
+networks:
+  # Public-facing hop: caddy <-> web/api/mcp. Has outbound internet (ACME, provider APIs from api).
+  edge: {}
+  # Data plane: no route to the outside world; postgres/redis are only reachable from app containers.
+  backend:
+    internal: true
+  # Outbound-only network for the worker (LLM/embedding providers) and ollama model pulls.
+  egress: {}
+
+volumes:
+  pgdata: {}
+  redisdata: {}
+  caddy_data: {}
+  caddy_config: {}
+  ollama: {}

@@ -1,0 +1,108 @@
+# Mnemos public edge (Caddy 2.8). Caddy is the ONLY container publishing host ports (80/443).
+#
+#   /api/*   -> api:8000   (prefix stripped; /api/metrics is blocked - metrics stay internal)
+#   /mcp*    -> mcp:8765   only when MCP_ROUTE=enabled (and the `mcp` compose profile is running)
+#   /*       -> web:8080   (dashboard SPA)
+#
+# Environment (set by infra/docker-compose.prod.yml from the .env file):
+#   SITE_ADDRESS      "mnemos.example.com" => automatic HTTPS (Let's Encrypt/ZeroSSL, needs DNS + ports 80/443)
+#                     ":80"                => plain HTTP only (private network, VPN, or TLS-terminating tunnel)
+#   ACME_EMAIL_OPTION "email ops@example.com" or empty (derived from ACME_EMAIL by compose)
+#   MCP_ROUTE         "enabled" | "disabled" (default)
+#   MAX_REQUEST_BODY  request body limit at the edge (default 2MB; the API enforces its own MAX_REQUEST_BYTES)
+#   TRUSTED_PROXIES   CIDRs/ranges whose X-Forwarded-For is trusted (default private_ranges, e.g. a tunnel)
+#
+# {$VAR} placeholders are substituted before parsing, so they may expand to whole tokens or to nothing.
+
+{
+	{$ACME_EMAIL_OPTION}
+	servers {
+		trusted_proxies static {$TRUSTED_PROXIES:private_ranges}
+	}
+}
+
+(security_headers) {
+	header {
+		# HSTS is ignored by browsers on plain-HTTP responses, so it is safe in HTTP-only mode too.
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+		-X-Powered-By
+	}
+}
+
+(access_log) {
+	log {
+		output stdout
+		# Authorization/Cookie are redacted by Caddy by default; also drop Mnemos-specific secret headers.
+		format filter {
+			wrap json
+			fields {
+				request>headers>X-Api-Key delete
+				request>headers>X-Bootstrap-Secret delete
+			}
+		}
+	}
+}
+
+(mcp_enabled) {
+	@mcp path /mcp /mcp/*
+	handle @mcp {
+		reverse_proxy mcp:8765 {
+			# streamable HTTP / SSE: never buffer
+			flush_interval -1
+		}
+	}
+}
+
+(mcp_disabled) {
+	@mcp path /mcp /mcp/*
+	handle @mcp {
+		respond "MCP endpoint is not enabled on this deployment" 404
+	}
+}
+
+(mnemos_site) {
+	import security_headers
+	import access_log
+
+	request_body {
+		max_size {$MAX_REQUEST_BODY:2MB}
+	}
+
+	# Prometheus metrics are for the internal network only.
+	@metrics path /api/metrics /api/metrics/*
+	handle @metrics {
+		respond "Not Found" 404
+	}
+
+	redir /api /api/ 308
+
+	handle_path /api/* {
+		encode zstd gzip
+		reverse_proxy api:8000 {
+			header_up X-Forwarded-Prefix /api
+		}
+	}
+
+	import mcp_{$MCP_ROUTE:disabled}
+
+	handle {
+		encode zstd gzip
+		reverse_proxy web:8080
+	}
+}
+
+{$SITE_ADDRESS::80} {
+	import mnemos_site
+}
+
+# Container healthcheck endpoint: loopback only, never published.
+http://127.0.0.1:2080 {
+	bind 127.0.0.1
+	respond /healthz "ok" 200
+}
