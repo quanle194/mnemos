@@ -284,10 +284,20 @@ def context(
     token_budget: int = 2000,
     project_id: str | None = None,
     agent_id: str | None = None,
+    project: str | None = typer.Option(None, help="project name (alternative to --project-id)"),
+    agent: str | None = typer.Option(None, help="agent name (alternative to --agent-id)"),
 ) -> None:
     """Build a token-budgeted context for a query."""
     with _client(url, key) as c:
-        res = c.context(workspace_id, query, token_budget=token_budget, project_id=project_id, agent_id=agent_id)
+        res = c.context(
+            workspace_id,
+            query,
+            token_budget=token_budget,
+            project_id=project_id,
+            agent_id=agent_id,
+            project_name=project,
+            agent_name=agent,
+        )
         typer.echo(res["context"] or "(no relevant memories)")
         typer.echo(
             f"\n-- {len(res['memories'])} memories, ~{res['token_estimate']} tokens, trace {res['retrieval_trace_id']}",

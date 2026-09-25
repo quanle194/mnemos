@@ -79,3 +79,38 @@ async def test_experience_is_learned_and_retrieved_by_other_agent(tenant: Tenant
     trace = await tenant.ok("GET", f"/v1/retrieval-traces/{ctx['retrieval_trace_id']}")
     assert trace["selected_json"]["items"][0]["id"] in ids
     assert "weights" in trace["candidates_json"]
+
+
+async def test_context_and_search_accept_names_without_creating(tenant: Tenant, worker: Worker) -> None:
+    await tenant.ok(
+        "POST",
+        "/v1/experiences",
+        json={"workspace_id": tenant.workspace_id, "project_name": "names", "agent_name": "writer", **RUN_A},
+    )
+    await worker.drain()
+    ctx = await tenant.ok(
+        "POST",
+        "/v1/context",
+        json={
+            "workspace_id": tenant.workspace_id,
+            "project_name": "names",
+            "agent_name": "writer",
+            "query": "deploy billing-api to staging",
+            "token_budget": 800,
+        },
+    )
+    assert ctx["memories"] and "lock-timeout" in ctx["context"]
+    res = await tenant.ok(
+        "POST",
+        "/v1/memories/search",
+        json={"workspace_id": tenant.workspace_id, "project_name": "names", "query": "migration lock timeout"},
+    )
+    assert res["items"]
+    r = await tenant.req(
+        "POST",
+        "/v1/context",
+        json={"workspace_id": tenant.workspace_id, "project_name": "nope", "query": "x", "token_budget": 100},
+    )
+    assert r.status_code == 404
+    projects = await tenant.ok("GET", f"/v1/workspaces/{tenant.workspace_id}/projects")
+    assert "nope" not in {p["name"] for p in projects}  # read path never creates entities

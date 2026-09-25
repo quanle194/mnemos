@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.api.deps import CtxDep
-from app.modules import retrieval_service
+from app.modules import retrieval_service, tenancy_service
 from app.modules.retrieval_service import RetrievalRequest
 from app.schemas.api import ContextIn, ContextMemory, ContextOut
 
@@ -12,11 +12,19 @@ router = APIRouter(prefix="/v1", tags=["retrieval"])
 
 @router.post("/context", response_model=ContextOut)
 async def context(body: ContextIn, ctx: CtxDep) -> ContextOut:
+    project_id, agent_id = await tenancy_service.lookup_ids(
+        ctx,
+        body.workspace_id,
+        project_id=body.project_id,
+        project_name=body.project_name,
+        agent_id=body.agent_id,
+        agent_name=body.agent_name,
+    )
     req = RetrievalRequest(
         workspace_id=body.workspace_id,
         query=body.query,
-        project_id=body.project_id,
-        agent_id=body.agent_id,
+        project_id=project_id,
+        agent_id=agent_id,
         session_id=body.session_id,
         types=[t.value for t in body.memory_types] if body.memory_types else None,
         include_candidates=body.include_candidates,

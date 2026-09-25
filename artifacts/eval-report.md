@@ -1,6 +1,6 @@
-# Learning transfer eval (7dfff242)
+# Learning transfer eval (8caa6481)
 
-API: `http://localhost:18080/api` - duration 2.59s - **PASS**
+API: `http://localhost:18080/api` - duration 2.66s - **PASS**
 
 ## Measured
 
@@ -15,10 +15,10 @@ API: `http://localhost:18080/api` - duration 2.59s - **PASS**
 | stale_memory_use_rate | 0.0 |
 | run_b_tool_calls_total | 5 |
 | control_tool_calls_total | 22 |
-| context_latency_ms_p50 | 22.55 |
-| context_latency_ms_p95 | 33.6 |
-| learning_latency_ms_p50 | 368.68 |
-| learning_latency_ms_p95 | 379.39 |
+| context_latency_ms_p50 | 25.29 |
+| context_latency_ms_p95 | 34.64 |
+| learning_latency_ms_p50 | 365.42 |
+| learning_latency_ms_p95 | 374.86 |
 | memories_learned_active | 5 |
 | tool_call_reduction | 0.773 |
 

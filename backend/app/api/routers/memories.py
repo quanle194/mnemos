@@ -151,12 +151,20 @@ async def list_memories(
 
 @router.post("/search", response_model=SearchOut)
 async def search(body: SearchIn, ctx: CtxDep) -> SearchOut:
-    scope_mode = body.scope_mode or ("chain" if (body.project_id or body.agent_id or body.session_id) else "workspace")
+    project_id, agent_id = await tenancy_service.lookup_ids(
+        ctx,
+        body.workspace_id,
+        project_id=body.project_id,
+        project_name=body.project_name,
+        agent_id=body.agent_id,
+        agent_name=body.agent_name,
+    )
+    scope_mode = body.scope_mode or ("chain" if (project_id or agent_id or body.session_id) else "workspace")
     req = RetrievalRequest(
         workspace_id=body.workspace_id,
         query=body.query,
-        project_id=body.project_id,
-        agent_id=body.agent_id,
+        project_id=project_id,
+        agent_id=agent_id,
         session_id=body.session_id,
         types=[t.value for t in body.types] if body.types else None,
         statuses=[s.value for s in body.statuses] if body.statuses else None,

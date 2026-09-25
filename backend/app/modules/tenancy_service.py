@@ -228,6 +228,30 @@ async def list_agents(ctx: Ctx, workspace_id: uuid.UUID) -> list[Agent]:
     )
 
 
+async def lookup_ids(
+    ctx: Ctx,
+    workspace_id: uuid.UUID,
+    *,
+    project_id: uuid.UUID | None,
+    project_name: str | None,
+    agent_id: uuid.UUID | None,
+    agent_name: str | None,
+) -> tuple[uuid.UUID | None, uuid.UUID | None]:
+    """Read-path name resolution (never creates entities). Unknown names -> 404."""
+    ws = await get_workspace(ctx, workspace_id)
+    if project_id is None and project_name:
+        project_id = await ctx.db.scalar(
+            select(Project.id).where(Project.workspace_id == ws.id, Project.name == project_name)
+        )
+        if project_id is None:
+            raise NotFound(f"project '{project_name}' not found")
+    if agent_id is None and agent_name:
+        agent_id = await ctx.db.scalar(select(Agent.id).where(Agent.workspace_id == ws.id, Agent.name == agent_name))
+        if agent_id is None:
+            raise NotFound(f"agent '{agent_name}' not found")
+    return project_id, agent_id
+
+
 @dataclass
 class Refs:
     workspace: Workspace
