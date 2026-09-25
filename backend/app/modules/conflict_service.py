@@ -18,15 +18,17 @@ from app.tenancy import NotFound
 
 async def get_conflict(ctx: Ctx, conflict_id: uuid.UUID) -> Conflict:
     ctx.principal.require(Permission.MEMORY_READ)
-    c = await ctx.db.scalar(select(Conflict).where(Conflict.id == conflict_id,
-                                                   Conflict.organization_id == ctx.principal.organization_id))
+    c = await ctx.db.scalar(
+        select(Conflict).where(Conflict.id == conflict_id, Conflict.organization_id == ctx.principal.organization_id)
+    )
     if c is None or (c.workspace_id and not ctx.principal.can_access_workspace(c.workspace_id)):
         raise NotFound("conflict not found")
     return c
 
 
-async def list_conflicts(ctx: Ctx, *, workspace_id: uuid.UUID | None, status: str | None, limit: int,
-                         cursor: uuid.UUID | None) -> list[Conflict]:
+async def list_conflicts(
+    ctx: Ctx, *, workspace_id: uuid.UUID | None, status: str | None, limit: int, cursor: uuid.UUID | None
+) -> list[Conflict]:
     ctx.principal.require(Permission.MEMORY_READ)
     q = select(Conflict).where(Conflict.organization_id == ctx.principal.organization_id)
     if ctx.principal.workspace_ids is not None:
@@ -40,12 +42,15 @@ async def list_conflicts(ctx: Ctx, *, workspace_id: uuid.UUID | None, status: st
     return list((await ctx.db.scalars(q.order_by(Conflict.id.desc()).limit(limit))).all())
 
 
-async def resolve(ctx: Ctx, conflict_id: uuid.UUID, resolution: ConflictResolution, note: str = "",
-                  *, auto: bool = False) -> Conflict:
+async def resolve(
+    ctx: Ctx, conflict_id: uuid.UUID, resolution: ConflictResolution, note: str = "", *, auto: bool = False
+) -> Conflict:
     ctx.principal.require(Permission.MEMORY_REVIEW)
-    c = await ctx.db.scalar(select(Conflict).where(Conflict.id == conflict_id,
-                                                   Conflict.organization_id == ctx.principal.organization_id)
-                            .with_for_update())
+    c = await ctx.db.scalar(
+        select(Conflict)
+        .where(Conflict.id == conflict_id, Conflict.organization_id == ctx.principal.organization_id)
+        .with_for_update()
+    )
     if c is None:
         raise NotFound("conflict not found")
     if c.status != ConflictStatus.OPEN.value:
@@ -60,8 +65,11 @@ async def resolve(ctx: Ctx, conflict_id: uuid.UUID, resolution: ConflictResoluti
 
     match resolution:
         case ConflictResolution.KEEP_EXISTING:
-            if cand.status not in (MemoryStatus.REJECTED.value, MemoryStatus.ARCHIVED.value,
-                                   MemoryStatus.SUPERSEDED.value):
+            if cand.status not in (
+                MemoryStatus.REJECTED.value,
+                MemoryStatus.ARCHIVED.value,
+                MemoryStatus.SUPERSEDED.value,
+            ):
                 target = MemoryStatus.REJECTED if cand.status in ("candidate", "disputed") else MemoryStatus.ARCHIVED
                 await memory_service.transition(ctx, cand, target, reason)
             await reactivate(existing)
@@ -84,14 +92,21 @@ async def resolve(ctx: Ctx, conflict_id: uuid.UUID, resolution: ConflictResoluti
     c.status = ConflictStatus.RESOLVED.value
     c.resolved_at = utcnow()
     c.resolution_json = {"resolution": resolution.value, "note": note, "by": ctx.principal.actor_id, "auto": auto}
-    await audit.record(ctx, "conflict.resolve", "conflict", c.id, workspace_id=c.workspace_id,
-                       after=c.resolution_json)
+    await audit.record(ctx, "conflict.resolve", "conflict", c.id, workspace_id=c.workspace_id, after=c.resolution_json)
     return c
 
 
 async def _negative_feedback(ctx: Ctx, memory_id: uuid.UUID) -> int:
-    return int(await ctx.db.scalar(select(func.count()).select_from(MemoryFeedback).where(
-        MemoryFeedback.memory_id == memory_id, MemoryFeedback.value.in_(["incorrect", "outdated", "harmful"]))) or 0)
+    return int(
+        await ctx.db.scalar(
+            select(func.count())
+            .select_from(MemoryFeedback)
+            .where(
+                MemoryFeedback.memory_id == memory_id, MemoryFeedback.value.in_(["incorrect", "outdated", "harmful"])
+            )
+        )
+        or 0
+    )
 
 
 async def auto_resolution(ctx: Ctx, c: Conflict) -> tuple[ConflictResolution | None, str]:
@@ -105,8 +120,10 @@ async def auto_resolution(ctx: Ctx, c: Conflict) -> tuple[ConflictResolution | N
     if existing.layer == 4:
         return None, "organizational memory requires human resolution"
     neg_existing = await _negative_feedback(ctx, existing.id)
-    hint = bool(c.analysis_json.get("rule_signal", {}).get("supersede_hint")) or \
-        c.analysis_json.get("judgment", {}).get("relation") == "supersedes"
+    hint = (
+        bool(c.analysis_json.get("rule_signal", {}).get("supersede_hint"))
+        or c.analysis_json.get("judgment", {}).get("relation") == "supersedes"
+    )
     if neg_existing >= ctx.settings.feedback_dispute_threshold and cand.trust_score >= existing.trust_score * 0.8:
         return ConflictResolution.ACCEPT_CANDIDATE, f"existing memory received {neg_existing} negative feedback"
     if hint and cand.trust_score >= existing.trust_score and cand.confidence >= existing.confidence - 0.1:
@@ -115,4 +132,3 @@ async def auto_resolution(ctx: Ctx, c: Conflict) -> tuple[ConflictResolution | N
     if neg_cand >= ctx.settings.feedback_dispute_threshold:
         return ConflictResolution.KEEP_EXISTING, f"candidate received {neg_cand} negative feedback"
     return None, "insufficient evidence for automatic resolution"
-

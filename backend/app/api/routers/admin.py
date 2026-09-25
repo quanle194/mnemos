@@ -28,31 +28,44 @@ router = APIRouter(prefix="/v1", tags=["admin"])
 
 
 @router.post("/admin/bootstrap", response_model=BootstrapOut, status_code=201)
-async def bootstrap(body: BootstrapIn, container: Annotated[Container, Depends(get_container)],
-                    db: Annotated[AsyncSession, Depends(get_db)],
-                    x_bootstrap_secret: Annotated[str | None, Header()] = None) -> BootstrapOut:
+async def bootstrap(
+    body: BootstrapIn,
+    container: Annotated[Container, Depends(get_container)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    x_bootstrap_secret: Annotated[str | None, Header()] = None,
+) -> BootstrapOut:
     secret = container.settings.api_bootstrap_secret
     if not x_bootstrap_secret or not hmac.compare_digest(x_bootstrap_secret, secret):
         raise ApiError(401, "unauthorized", "invalid bootstrap secret")
-    res = await tenancy_service.bootstrap(db, container.settings, organization_name=body.organization_name,
-                                          workspace_name=body.workspace_name)
+    res = await tenancy_service.bootstrap(
+        db, container.settings, organization_name=body.organization_name, workspace_name=body.workspace_name
+    )
     await db.commit()
-    return BootstrapOut(organization_id=res.organization.id, workspace_id=res.workspace.id, api_key=res.raw_key,
-                        api_key_id=res.api_key.id)
+    return BootstrapOut(
+        organization_id=res.organization.id,
+        workspace_id=res.workspace.id,
+        api_key=res.raw_key,
+        api_key_id=res.api_key.id,
+    )
 
 
 @router.get("/me", response_model=MeOut)
 async def me(ctx: CtxDep) -> MeOut:
     p = ctx.principal
-    return MeOut(organization_id=p.organization_id, role=p.role.value, actor_id=p.actor_id,
-                 permissions=sorted(x.value for x in ROLE_PERMISSIONS[p.role]),
-                 workspace_ids=sorted(p.workspace_ids) if p.workspace_ids is not None else None)
+    return MeOut(
+        organization_id=p.organization_id,
+        role=p.role.value,
+        actor_id=p.actor_id,
+        permissions=sorted(x.value for x in ROLE_PERMISSIONS[p.role]),
+        workspace_ids=sorted(p.workspace_ids) if p.workspace_ids is not None else None,
+    )
 
 
 @router.post("/api-keys", response_model=ApiKeyCreated, status_code=201)
 async def create_key(body: ApiKeyIn, ctx: CtxDep) -> ApiKeyCreated:
-    key, raw = await tenancy_service.create_api_key(ctx, name=body.name, role=body.role,
-                                                    workspace_ids=body.workspace_ids)
+    key, raw = await tenancy_service.create_api_key(
+        ctx, name=body.name, role=body.role, workspace_ids=body.workspace_ids
+    )
     await ctx.commit()
     return ApiKeyCreated.model_validate({**ApiKeyOut.model_validate(key).model_dump(), "api_key": raw})
 

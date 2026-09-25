@@ -23,8 +23,9 @@ class Container:
     embedder: EmbeddingProvider
 
     @classmethod
-    def build(cls, settings: Settings, *, llm: LLMProvider | None = None,
-              embedder: EmbeddingProvider | None = None) -> Container:
+    def build(
+        cls, settings: Settings, *, llm: LLMProvider | None = None, embedder: EmbeddingProvider | None = None
+    ) -> Container:
         engine = create_engine(settings)
         embedder = embedder or build_embedder(settings)
         if embedder.dimensions != settings.embedding_dimensions:

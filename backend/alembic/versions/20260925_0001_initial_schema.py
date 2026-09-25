@@ -96,9 +96,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("last_used_at", sa.DateTime(timezone=True), nullable=True),
-        sa.CheckConstraint(
-            "role IN ('admin', 'maintainer', 'agent', 'viewer')", name=op.f("ck_api_keys_role")
-        ),
+        sa.CheckConstraint("role IN ('admin', 'maintainer', 'agent', 'viewer')", name=op.f("ck_api_keys_role")),
         sa.ForeignKeyConstraint(
             ["organization_id"],
             ["organizations.id"],
@@ -141,9 +139,7 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_audit_logs")),
     )
-    op.create_index(
-        "ix_audit_logs_org_created", "audit_logs", ["organization_id", "created_at"], unique=False
-    )
+    op.create_index("ix_audit_logs_org_created", "audit_logs", ["organization_id", "created_at"], unique=False)
     op.create_index(op.f("ix_audit_logs_organization_id"), "audit_logs", ["organization_id"], unique=False)
     op.create_index("ix_audit_logs_resource", "audit_logs", ["resource_type", "resource_id"], unique=False)
     op.create_index(op.f("ix_audit_logs_workspace_id"), "audit_logs", ["workspace_id"], unique=False)
@@ -167,9 +163,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_idempotency_keys")),
         sa.UniqueConstraint("organization_id", "key", name=op.f("uq_idempotency_keys_organization_id")),
     )
-    op.create_index(
-        op.f("ix_idempotency_keys_organization_id"), "idempotency_keys", ["organization_id"], unique=False
-    )
+    op.create_index(op.f("ix_idempotency_keys_organization_id"), "idempotency_keys", ["organization_id"], unique=False)
     op.create_table(
         "workspaces",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -259,9 +253,7 @@ def upgrade() -> None:
             "mode IN ('reflection', 'deduplication', 'pattern', 'contradiction', 'generalization', 'compression')",
             name=op.f("ck_dream_jobs_mode"),
         ),
-        sa.CheckConstraint(
-            "status IN ('queued', 'running', 'succeeded', 'failed')", name=op.f("ck_dream_jobs_status")
-        ),
+        sa.CheckConstraint("status IN ('queued', 'running', 'succeeded', 'failed')", name=op.f("ck_dream_jobs_status")),
         sa.CheckConstraint(
             "trigger_type IN ('manual','schedule','event_count','memory_growth')",
             name=op.f("ck_dream_jobs_trigger"),
@@ -499,9 +491,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_memories_content_hash", "memories", ["workspace_id", "content_hash"], unique=False)
     op.create_index(op.f("ix_memories_organization_id"), "memories", ["organization_id"], unique=False)
-    op.create_index(
-        "ix_memories_search_tsv", "memories", ["search_tsv"], unique=False, postgresql_using="gin"
-    )
+    op.create_index("ix_memories_search_tsv", "memories", ["search_tsv"], unique=False, postgresql_using="gin")
     op.create_index(op.f("ix_memories_workspace_id"), "memories", ["workspace_id"], unique=False)
     op.create_index("ix_memories_ws_status", "memories", ["workspace_id", "status"], unique=False)
     op.create_table(
@@ -571,15 +561,9 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_retrieval_traces")),
     )
-    op.create_index(
-        op.f("ix_retrieval_traces_organization_id"), "retrieval_traces", ["organization_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_retrieval_traces_workspace_id"), "retrieval_traces", ["workspace_id"], unique=False
-    )
-    op.create_index(
-        "ix_retrieval_traces_ws_created", "retrieval_traces", ["workspace_id", "created_at"], unique=False
-    )
+    op.create_index(op.f("ix_retrieval_traces_organization_id"), "retrieval_traces", ["organization_id"], unique=False)
+    op.create_index(op.f("ix_retrieval_traces_workspace_id"), "retrieval_traces", ["workspace_id"], unique=False)
+    op.create_index("ix_retrieval_traces_ws_created", "retrieval_traces", ["workspace_id", "created_at"], unique=False)
     op.create_table(
         "scheduler_state",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -609,12 +593,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_scheduler_state")),
         sa.UniqueConstraint("workspace_id", "task", name=op.f("uq_scheduler_state_workspace_id")),
     )
-    op.create_index(
-        op.f("ix_scheduler_state_organization_id"), "scheduler_state", ["organization_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_scheduler_state_workspace_id"), "scheduler_state", ["workspace_id"], unique=False
-    )
+    op.create_index(op.f("ix_scheduler_state_organization_id"), "scheduler_state", ["organization_id"], unique=False)
+    op.create_index(op.f("ix_scheduler_state_workspace_id"), "scheduler_state", ["workspace_id"], unique=False)
     op.create_table(
         "working_memories",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -651,12 +631,8 @@ def upgrade() -> None:
         ),
     )
     op.create_index("ix_working_memories_expires", "working_memories", ["expires_at"], unique=False)
-    op.create_index(
-        op.f("ix_working_memories_organization_id"), "working_memories", ["organization_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_working_memories_workspace_id"), "working_memories", ["workspace_id"], unique=False
-    )
+    op.create_index(op.f("ix_working_memories_organization_id"), "working_memories", ["organization_id"], unique=False)
+    op.create_index(op.f("ix_working_memories_workspace_id"), "working_memories", ["workspace_id"], unique=False)
     op.create_table(
         "conflicts",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -706,9 +682,7 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_conflicts")),
-        sa.UniqueConstraint(
-            "candidate_memory_id", "existing_memory_id", name=op.f("uq_conflicts_candidate_memory_id")
-        ),
+        sa.UniqueConstraint("candidate_memory_id", "existing_memory_id", name=op.f("uq_conflicts_candidate_memory_id")),
     )
     op.create_index(op.f("ix_conflicts_organization_id"), "conflicts", ["organization_id"], unique=False)
     op.create_index(op.f("ix_conflicts_workspace_id"), "conflicts", ["workspace_id"], unique=False)
@@ -748,9 +722,7 @@ def upgrade() -> None:
             "processing_status IN ('pending','processed','failed')",
             name=op.f("ck_experiences_processing_status"),
         ),
-        sa.CheckConstraint(
-            "source IN ('agent', 'user', 'tool', 'external')", name=op.f("ck_experiences_source")
-        ),
+        sa.CheckConstraint("source IN ('agent', 'user', 'tool', 'external')", name=op.f("ck_experiences_source")),
         sa.ForeignKeyConstraint(
             ["episode_id"],
             ["episodes.id"],
@@ -811,12 +783,8 @@ def upgrade() -> None:
         ),
     )
     op.create_index(op.f("ix_memory_evidence_memory_id"), "memory_evidence", ["memory_id"], unique=False)
-    op.create_index(
-        op.f("ix_memory_evidence_organization_id"), "memory_evidence", ["organization_id"], unique=False
-    )
-    op.create_index(
-        "ix_memory_evidence_source", "memory_evidence", ["source_type", "source_id"], unique=False
-    )
+    op.create_index(op.f("ix_memory_evidence_organization_id"), "memory_evidence", ["organization_id"], unique=False)
+    op.create_index("ix_memory_evidence_source", "memory_evidence", ["source_type", "source_id"], unique=False)
     op.create_table(
         "memory_feedback",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -856,12 +824,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_memory_feedback")),
     )
     op.create_index(op.f("ix_memory_feedback_memory_id"), "memory_feedback", ["memory_id"], unique=False)
-    op.create_index(
-        op.f("ix_memory_feedback_organization_id"), "memory_feedback", ["organization_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_memory_feedback_workspace_id"), "memory_feedback", ["workspace_id"], unique=False
-    )
+    op.create_index(op.f("ix_memory_feedback_organization_id"), "memory_feedback", ["organization_id"], unique=False)
+    op.create_index(op.f("ix_memory_feedback_workspace_id"), "memory_feedback", ["workspace_id"], unique=False)
     op.create_table(
         "memory_relations",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -907,9 +871,7 @@ def upgrade() -> None:
             name=op.f("uq_memory_relations_source_memory_id"),
         ),
     )
-    op.create_index(
-        op.f("ix_memory_relations_organization_id"), "memory_relations", ["organization_id"], unique=False
-    )
+    op.create_index(op.f("ix_memory_relations_organization_id"), "memory_relations", ["organization_id"], unique=False)
     op.create_index(
         op.f("ix_memory_relations_source_memory_id"), "memory_relations", ["source_memory_id"], unique=False
     )
@@ -948,9 +910,7 @@ def upgrade() -> None:
         sa.UniqueConstraint("memory_id", "version", name=op.f("uq_memory_versions_memory_id")),
     )
     op.create_index(op.f("ix_memory_versions_memory_id"), "memory_versions", ["memory_id"], unique=False)
-    op.create_index(
-        op.f("ix_memory_versions_organization_id"), "memory_versions", ["organization_id"], unique=False
-    )
+    op.create_index(op.f("ix_memory_versions_organization_id"), "memory_versions", ["organization_id"], unique=False)
     op.create_table(
         "retrieval_trace_items",
         sa.Column("id", sa.UUID(), nullable=False),
@@ -981,9 +941,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_retrieval_trace_items")),
         sa.UniqueConstraint("trace_id", "memory_id", name=op.f("uq_retrieval_trace_items_trace_id")),
     )
-    op.create_index(
-        op.f("ix_retrieval_trace_items_memory_id"), "retrieval_trace_items", ["memory_id"], unique=False
-    )
+    op.create_index(op.f("ix_retrieval_trace_items_memory_id"), "retrieval_trace_items", ["memory_id"], unique=False)
     op.create_index(
         op.f("ix_retrieval_trace_items_organization_id"),
         "retrieval_trace_items",
@@ -1119,9 +1077,7 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_episodes_workspace_id"), table_name="episodes")
     op.drop_index(op.f("ix_episodes_organization_id"), table_name="episodes")
     op.drop_table("episodes")
-    op.drop_index(
-        "uq_dream_jobs_window", table_name="dream_jobs", postgresql_where=sa.text("window_hash IS NOT NULL")
-    )
+    op.drop_index("uq_dream_jobs_window", table_name="dream_jobs", postgresql_where=sa.text("window_hash IS NOT NULL"))
     op.drop_index(op.f("ix_dream_jobs_workspace_id"), table_name="dream_jobs")
     op.drop_index(op.f("ix_dream_jobs_organization_id"), table_name="dream_jobs")
     op.drop_table("dream_jobs")
@@ -1141,9 +1097,7 @@ def downgrade() -> None:
     op.drop_table("api_keys")
     op.drop_table("organizations")
     op.drop_index("ix_jobs_running_lease", table_name="jobs", postgresql_where=sa.text("status = 'running'"))
-    op.drop_index(
-        "ix_jobs_ready", table_name="jobs", postgresql_where=sa.text("status IN ('queued','failed')")
-    )
+    op.drop_index("ix_jobs_ready", table_name="jobs", postgresql_where=sa.text("status IN ('queued','failed')"))
     op.drop_index(op.f("ix_jobs_organization_id"), table_name="jobs")
     op.drop_table("jobs")
     # ### end Alembic commands ###

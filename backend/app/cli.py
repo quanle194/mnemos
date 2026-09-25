@@ -23,8 +23,15 @@ dream_app = typer.Typer(help="Dream commands", no_args_is_help=True)
 workspace_app = typer.Typer(help="Workspace commands", no_args_is_help=True)
 jobs_app = typer.Typer(help="Job queue commands", no_args_is_help=True)
 eval_app = typer.Typer(help="Evaluation commands", no_args_is_help=True)
-for sub, name in ((admin_app, "admin"), (memory_app, "memory"), (experience_app, "experience"),
-                  (dream_app, "dream"), (workspace_app, "workspace"), (jobs_app, "jobs"), (eval_app, "eval")):
+for sub, name in (
+    (admin_app, "admin"),
+    (memory_app, "memory"),
+    (experience_app, "experience"),
+    (dream_app, "dream"),
+    (workspace_app, "workspace"),
+    (jobs_app, "jobs"),
+    (eval_app, "eval"),
+):
     app.add_typer(sub, name=name)
 
 UrlOpt = Annotated[str, typer.Option(envvar="MNEMOS_URL", help="API base URL")]
@@ -48,8 +55,17 @@ def api(host: str = "0.0.0.0", port: int = 8000, workers: int = 1, reload: bool 
     """Run the API server (uvicorn)."""
     import uvicorn
 
-    uvicorn.run("app.main:app_factory", factory=True, host=host, port=port, workers=workers, reload=reload,
-                proxy_headers=True, forwarded_allow_ips="*", access_log=False)
+    uvicorn.run(
+        "app.main:app_factory",
+        factory=True,
+        host=host,
+        port=port,
+        workers=workers,
+        reload=reload,
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+        access_log=False,
+    )
 
 
 @app.command()
@@ -108,8 +124,10 @@ def health(url: UrlOpt = "http://localhost:8000") -> None:
 
 # ------------------------------------------------------------------ admin (direct DB)
 @admin_app.command("bootstrap")
-def admin_bootstrap(organization: str = typer.Option(..., help="Organization name"),
-                    workspace: str = typer.Option("default", help="Initial workspace name")) -> None:
+def admin_bootstrap(
+    organization: str = typer.Option(..., help="Organization name"),
+    workspace: str = typer.Option("default", help="Initial workspace name"),
+) -> None:
     """Create an organization, workspace and admin API key directly in the database."""
     from app.config import get_settings
     from app.container import Container
@@ -119,11 +137,15 @@ def admin_bootstrap(organization: str = typer.Option(..., help="Organization nam
         container = Container.build(get_settings())
         try:
             async with container.sessions() as db:
-                res = await tenancy_service.bootstrap(db, container.settings, organization_name=organization,
-                                                      workspace_name=workspace)
+                res = await tenancy_service.bootstrap(
+                    db, container.settings, organization_name=organization, workspace_name=workspace
+                )
                 await db.commit()
-                return {"organization_id": str(res.organization.id), "workspace_id": str(res.workspace.id),
-                        "api_key": res.raw_key}
+                return {
+                    "organization_id": str(res.organization.id),
+                    "workspace_id": str(res.workspace.id),
+                    "api_key": res.raw_key,
+                }
         finally:
             await container.aclose()
 
@@ -131,8 +153,12 @@ def admin_bootstrap(organization: str = typer.Option(..., help="Organization nam
 
 
 @admin_app.command("create-key")
-def admin_create_key(organization_id: str, name: str, role: str = "agent",
-                     workspace_id: Annotated[list[str] | None, typer.Option()] = None) -> None:
+def admin_create_key(
+    organization_id: str,
+    name: str,
+    role: str = "agent",
+    workspace_id: Annotated[list[str] | None, typer.Option()] = None,
+) -> None:
     """Create an API key for an organization (direct DB)."""
     import uuid
 
@@ -147,10 +173,19 @@ def admin_create_key(organization_id: str, name: str, role: str = "agent",
         container = Container.build(get_settings())
         try:
             async with container.sessions() as db:
-                ctx = Ctx(db=db, principal=Principal(organization_id=uuid.UUID(organization_id), role=Role.ADMIN,
-                                                     actor_type="admin_cli", actor_id="cli"), container=container)
+                ctx = Ctx(
+                    db=db,
+                    principal=Principal(
+                        organization_id=uuid.UUID(organization_id),
+                        role=Role.ADMIN,
+                        actor_type="admin_cli",
+                        actor_id="cli",
+                    ),
+                    container=container,
+                )
                 key, raw = await tenancy_service.create_api_key(
-                    ctx, name=name, role=Role(role), workspace_ids=[uuid.UUID(w) for w in workspace_id or []] or None)
+                    ctx, name=name, role=Role(role), workspace_ids=[uuid.UUID(w) for w in workspace_id or []] or None
+                )
                 await ctx.commit()
                 return {"id": str(key.id), "role": key.role, "api_key": raw}
         finally:
@@ -196,8 +231,12 @@ def jobs_schedule_once() -> None:
 
 # ------------------------------------------------------------------ remote commands (SDK)
 @workspace_app.command("bootstrap")
-def workspace_bootstrap(organization: str, workspace: str = "default", url: UrlOpt = "http://localhost:8000",
-                        secret: str = typer.Option(..., envvar="API_BOOTSTRAP_SECRET")) -> None:
+def workspace_bootstrap(
+    organization: str,
+    workspace: str = "default",
+    url: UrlOpt = "http://localhost:8000",
+    secret: str = typer.Option(..., envvar="API_BOOTSTRAP_SECRET"),
+) -> None:
     """Bootstrap organization/workspace/admin key through the API using the bootstrap secret."""
     with _client(url, None) as c:
         _print(c.bootstrap(secret, organization, workspace))
@@ -210,8 +249,9 @@ def workspace_list(url: UrlOpt = "http://localhost:8000", key: KeyOpt = None) ->
 
 
 @memory_app.command("search")
-def memory_search(query: str, workspace_id: WsOpt, url: UrlOpt = "http://localhost:8000", key: KeyOpt = None,
-                  limit: int = 10) -> None:
+def memory_search(
+    query: str, workspace_id: WsOpt, url: UrlOpt = "http://localhost:8000", key: KeyOpt = None, limit: int = 10
+) -> None:
     with _client(url, key) as c:
         res = c.search_memories(workspace_id, query, limit=limit)
         for item in res["items"]:
@@ -222,29 +262,61 @@ def memory_search(query: str, workspace_id: WsOpt, url: UrlOpt = "http://localho
 @memory_app.command("show")
 def memory_show(memory_id: str, url: UrlOpt = "http://localhost:8000", key: KeyOpt = None) -> None:
     with _client(url, key) as c:
-        _print({"memory": c.get_memory(memory_id), "evidence": c.memory_evidence(memory_id),
-                "history": c.memory_history(memory_id), "relations": c.memory_relations(memory_id)})
+        _print(
+            {
+                "memory": c.get_memory(memory_id),
+                "evidence": c.memory_evidence(memory_id),
+                "history": c.memory_history(memory_id),
+                "relations": c.memory_relations(memory_id),
+            }
+        )
 
 
 @app.command()
-def context(query: str, workspace_id: WsOpt, url: UrlOpt = "http://localhost:8000", key: KeyOpt = None,
-            token_budget: int = 2000, project_id: str | None = None, agent_id: str | None = None) -> None:
+def context(
+    query: str,
+    workspace_id: WsOpt,
+    url: UrlOpt = "http://localhost:8000",
+    key: KeyOpt = None,
+    token_budget: int = 2000,
+    project_id: str | None = None,
+    agent_id: str | None = None,
+) -> None:
     """Build a token-budgeted context for a query."""
     with _client(url, key) as c:
         res = c.context(workspace_id, query, token_budget=token_budget, project_id=project_id, agent_id=agent_id)
         typer.echo(res["context"] or "(no relevant memories)")
-        typer.echo(f"\n-- {len(res['memories'])} memories, ~{res['token_estimate']} tokens, "
-                   f"trace {res['retrieval_trace_id']}", err=True)
+        typer.echo(
+            f"\n-- {len(res['memories'])} memories, ~{res['token_estimate']} tokens, trace {res['retrieval_trace_id']}",
+            err=True,
+        )
 
 
 @experience_app.command("create")
-def experience_create(workspace_id: WsOpt, task: str = typer.Option(...), outcome: str = typer.Option(...),
-                      observation: str = "", action: str = "", result: str = "", project: str | None = None,
-                      agent: str | None = None, wait: bool = False, url: UrlOpt = "http://localhost:8000",
-                      key: KeyOpt = None) -> None:
+def experience_create(
+    workspace_id: WsOpt,
+    task: str = typer.Option(...),
+    outcome: str = typer.Option(...),
+    observation: str = "",
+    action: str = "",
+    result: str = "",
+    project: str | None = None,
+    agent: str | None = None,
+    wait: bool = False,
+    url: UrlOpt = "http://localhost:8000",
+    key: KeyOpt = None,
+) -> None:
     with _client(url, key) as c:
-        res = c.experience(workspace_id, task, outcome, observation=observation, action=action, result=result,
-                           project_name=project, agent_name=agent)
+        res = c.experience(
+            workspace_id,
+            task,
+            outcome,
+            observation=observation,
+            action=action,
+            result=result,
+            project_name=project,
+            agent_name=agent,
+        )
         if wait:
             res = c.wait_for_learning(res["experience"]["id"])
         _print(res)
@@ -263,9 +335,11 @@ def dream_status(dream_id: str, url: UrlOpt = "http://localhost:8000", key: KeyO
 
 
 @eval_app.command("run")
-def eval_run(url: UrlOpt = "http://localhost:8000", secret: str = typer.Option("change-me",
-                                                                               envvar="API_BOOTSTRAP_SECRET"),
-             output: str = "artifacts/eval-report.json") -> None:
+def eval_run(
+    url: UrlOpt = "http://localhost:8000",
+    secret: str = typer.Option("change-me", envvar="API_BOOTSTRAP_SECRET"),
+    output: str = "artifacts/eval-report.json",
+) -> None:
     """Run the Run-A -> learn -> Run-B learning eval against a running stack."""
     try:
         from mnemos_evals.runner import run_eval

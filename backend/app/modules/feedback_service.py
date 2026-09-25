@@ -31,16 +31,31 @@ def apply_delta(value: float, factor: float) -> float:
     return round(max(0.0, value + factor * value), 4)
 
 
-async def add_feedback(ctx: Ctx, memory_id: uuid.UUID, value: FeedbackValue, *, note: str = "",
-                       agent_id: uuid.UUID | None = None, session_id: uuid.UUID | None = None,
-                       task_id: str | None = None, retrieval_trace_id: uuid.UUID | None = None
-                       ) -> tuple[MemoryFeedback, dict[str, object]]:
+async def add_feedback(
+    ctx: Ctx,
+    memory_id: uuid.UUID,
+    value: FeedbackValue,
+    *,
+    note: str = "",
+    agent_id: uuid.UUID | None = None,
+    session_id: uuid.UUID | None = None,
+    task_id: str | None = None,
+    retrieval_trace_id: uuid.UUID | None = None,
+) -> tuple[MemoryFeedback, dict[str, object]]:
     ctx.principal.require(Permission.FEEDBACK_WRITE)
     m = await memory_service.lock_memory(ctx, memory_id)
-    fb = MemoryFeedback(organization_id=m.organization_id, memory_id=m.id, workspace_id=m.workspace_id,
-                        agent_id=agent_id, session_id=session_id, task_id=task_id,
-                        retrieval_trace_id=retrieval_trace_id, value=value.value, note=redact_text(note)[:2000],
-                        created_by_id=ctx.principal.actor_id)
+    fb = MemoryFeedback(
+        organization_id=m.organization_id,
+        memory_id=m.id,
+        workspace_id=m.workspace_id,
+        agent_id=agent_id,
+        session_id=session_id,
+        task_id=task_id,
+        retrieval_trace_id=retrieval_trace_id,
+        value=value.value,
+        note=redact_text(note)[:2000],
+        created_by_id=ctx.principal.actor_id,
+    )
     ctx.db.add(fb)
     await ctx.db.flush()
     before = {"utility_score": m.utility_score, "trust_score": m.trust_score, "status": m.status}
@@ -48,28 +63,61 @@ async def add_feedback(ctx: Ctx, memory_id: uuid.UUID, value: FeedbackValue, *, 
     m.utility_score = apply_delta(m.utility_score, u_factor)
     m.trust_score = apply_delta(m.trust_score, t_factor)
     m.updated_at = utcnow()
-    counts = dict((await ctx.db.execute(
-        select(MemoryFeedback.value, func.count()).where(MemoryFeedback.memory_id == m.id)
-        .group_by(MemoryFeedback.value))).all())
+    counts = dict(
+        (
+            await ctx.db.execute(
+                select(MemoryFeedback.value, func.count())
+                .where(MemoryFeedback.memory_id == m.id)
+                .group_by(MemoryFeedback.value)
+            )
+        ).all()
+    )
     lifecycle_action = None
     retrievable = m.status in (MemoryStatus.ACTIVE.value, MemoryStatus.VALIDATED.value)
     s = ctx.settings
     if value == FeedbackValue.HARMFUL and retrievable:
         await memory_service.transition(ctx, m, MemoryStatus.DISPUTED, "quarantined after harmful feedback")
         lifecycle_action = "quarantined"
-    elif value == FeedbackValue.INCORRECT and retrievable and counts.get("incorrect", 0) >= s.feedback_dispute_threshold:
-        await memory_service.transition(ctx, m, MemoryStatus.DISPUTED,
-                                        f"disputed after {counts['incorrect']} incorrect feedback")
+    elif (
+        value == FeedbackValue.INCORRECT and retrievable and counts.get("incorrect", 0) >= s.feedback_dispute_threshold
+    ):
+        await memory_service.transition(
+            ctx, m, MemoryStatus.DISPUTED, f"disputed after {counts['incorrect']} incorrect feedback"
+        )
         lifecycle_action = "disputed"
-    elif value == FeedbackValue.OUTDATED and m.valid_until is None and \
-            counts.get("outdated", 0) >= s.feedback_outdated_threshold:
-        await memory_service.apply_changes(ctx, m, {"valid_until": utcnow()},
-                                           f"expired after {counts['outdated']} outdated feedback",
-                                           action="memory.expire")
+    elif (
+        value == FeedbackValue.OUTDATED
+        and m.valid_until is None
+        and counts.get("outdated", 0) >= s.feedback_outdated_threshold
+    ):
+        await memory_service.apply_changes(
+            ctx,
+            m,
+            {"valid_until": utcnow()},
+            f"expired after {counts['outdated']} outdated feedback",
+            action="memory.expire",
+        )
         lifecycle_action = "expired"
-    await audit.record(ctx, "memory.feedback", "memory", m.id, workspace_id=m.workspace_id, before=before,
-                       after={"utility_score": m.utility_score, "trust_score": m.trust_score, "status": m.status,
-                              "feedback": value.value, "lifecycle_action": lifecycle_action})
+    await audit.record(
+        ctx,
+        "memory.feedback",
+        "memory",
+        m.id,
+        workspace_id=m.workspace_id,
+        before=before,
+        after={
+            "utility_score": m.utility_score,
+            "trust_score": m.trust_score,
+            "status": m.status,
+            "feedback": value.value,
+            "lifecycle_action": lifecycle_action,
+        },
+    )
     FEEDBACK_TOTAL.labels(value=value.value).inc()
-    return fb, {"utility_score": m.utility_score, "trust_score": m.trust_score, "status": m.status,
-                "lifecycle_action": lifecycle_action, "counts": counts}
+    return fb, {
+        "utility_score": m.utility_score,
+        "trust_score": m.trust_score,
+        "status": m.status,
+        "lifecycle_action": lifecycle_action,
+        "counts": counts,
+    }

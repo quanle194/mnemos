@@ -42,11 +42,33 @@ from app.modules.tenancy_service import Refs
 from app.tenancy import Conflict, NotFound, PermissionDenied, ValidationFailed
 
 SNAPSHOT_FIELDS = (
-    "type", "layer", "scope_type", "scope_id", "title", "content", "status", "review_state", "confidence",
-    "trust_score", "importance", "utility_score", "valid_from", "valid_until", "metadata_json",
+    "type",
+    "layer",
+    "scope_type",
+    "scope_id",
+    "title",
+    "content",
+    "status",
+    "review_state",
+    "confidence",
+    "trust_score",
+    "importance",
+    "utility_score",
+    "valid_from",
+    "valid_until",
+    "metadata_json",
 )
-PATCHABLE = {"title", "content", "type", "importance", "confidence", "valid_from", "valid_until", "metadata_json",
-             "status"}
+PATCHABLE = {
+    "title",
+    "content",
+    "type",
+    "importance",
+    "confidence",
+    "valid_from",
+    "valid_until",
+    "metadata_json",
+    "status",
+}
 
 
 def snapshot(m: Memory) -> dict[str, Any]:
@@ -107,7 +129,7 @@ def scope_id_for(refs: Refs, scope_type: ScopeType) -> uuid.UUID:
 async def verify_evidence(ctx: Ctx, evidence: list[EvidenceInput]) -> None:
     """Evidence must reference sources inside the caller's organization (no cross-tenant provenance)."""
     org = ctx.principal.organization_id
-    table_for = {
+    table_for: dict[EvidenceSourceType, Any] = {
         EvidenceSourceType.EXPERIENCE: Experience,
         EvidenceSourceType.EVENT: Event,
         EvidenceSourceType.EPISODE: Episode,
@@ -127,10 +149,24 @@ async def verify_evidence(ctx: Ctx, evidence: list[EvidenceInput]) -> None:
 
 
 async def create_memory(
-    ctx: Ctx, *, refs: Refs, type: MemoryType, scope_type: ScopeType, title: str, content: str,
-    status: MemoryStatus, confidence: float, trust: float, importance: float, evidence: list[EvidenceInput],
-    reason: str, layer: int = 3, valid_from: datetime | None = None, valid_until: datetime | None = None,
-    metadata: dict[str, Any] | None = None, review_state: ReviewState = ReviewState.NONE,
+    ctx: Ctx,
+    *,
+    refs: Refs,
+    type: MemoryType,
+    scope_type: ScopeType,
+    title: str,
+    content: str,
+    status: MemoryStatus,
+    confidence: float,
+    trust: float,
+    importance: float,
+    evidence: list[EvidenceInput],
+    reason: str,
+    layer: int = 3,
+    valid_from: datetime | None = None,
+    valid_until: datetime | None = None,
+    metadata: dict[str, Any] | None = None,
+    review_state: ReviewState = ReviewState.NONE,
     embedding: list[float] | None = None,
 ) -> Memory:
     title, content = redact_text(title.strip()), redact_text(content.strip())
@@ -140,28 +176,56 @@ async def create_memory(
     m = Memory(
         organization_id=refs.workspace.organization_id,
         workspace_id=None if scope_type == ScopeType.ORGANIZATION else refs.workspace.id,
-        project_id=refs.project_id, agent_id=refs.agent_id, layer=layer, type=type.value,
-        scope_type=scope_type.value, scope_id=scope_id, title=title[:300], content=content,
-        content_hash=content_hash(content), status=status.value, review_state=review_state.value,
-        confidence=confidence, trust_score=trust, importance=importance, utility_score=0.5,
-        valid_from=valid_from or utcnow(), valid_until=valid_until, version=1,
+        project_id=refs.project_id,
+        agent_id=refs.agent_id,
+        layer=layer,
+        type=type.value,
+        scope_type=scope_type.value,
+        scope_id=scope_id,
+        title=title[:300],
+        content=content,
+        content_hash=content_hash(content),
+        status=status.value,
+        review_state=review_state.value,
+        confidence=confidence,
+        trust_score=trust,
+        importance=importance,
+        utility_score=0.5,
+        valid_from=valid_from or utcnow(),
+        valid_until=valid_until,
+        version=1,
         embedding=embedding or await embed(ctx, memory_text(title, content)),
-        metadata_json=redact_value(metadata or {}), created_by_type=ctx.principal.actor_type,
+        metadata_json=redact_value(metadata or {}),
+        created_by_type=ctx.principal.actor_type,
         created_by_id=ctx.principal.actor_id,
     )
     ctx.db.add(m)
     await ctx.db.flush()
-    ctx.db.add(MemoryVersion(organization_id=m.organization_id, memory_id=m.id, version=1, snapshot_json=snapshot(m),
-                             change_reason=reason, actor_type=ctx.principal.actor_type,
-                             actor_id=ctx.principal.actor_id))
+    ctx.db.add(
+        MemoryVersion(
+            organization_id=m.organization_id,
+            memory_id=m.id,
+            version=1,
+            snapshot_json=snapshot(m),
+            change_reason=reason,
+            actor_type=ctx.principal.actor_type,
+            actor_id=ctx.principal.actor_id,
+        )
+    )
     for ev in evidence:
         await add_evidence(ctx, m, ev)
-    await audit.record(ctx, "memory.create", "memory", m.id, workspace_id=m.workspace_id,
-                       after={**snapshot(m), "reason": reason, "evidence": len(evidence)})
+    await audit.record(
+        ctx,
+        "memory.create",
+        "memory",
+        m.id,
+        workspace_id=m.workspace_id,
+        after={**snapshot(m), "reason": reason, "evidence": len(evidence)},
+    )
     return m
 
 
-def _base_query(ctx: Ctx) -> Select[tuple[Memory]]:
+def _base_query(ctx: Ctx) -> Select[Memory]:
     return select(Memory).where(visible_filter(ctx))
 
 
@@ -181,8 +245,15 @@ async def lock_memory(ctx: Ctx, memory_id: uuid.UUID) -> Memory:
     return m
 
 
-async def apply_changes(ctx: Ctx, m: Memory, changes: dict[str, Any], reason: str, *,
-                        expected_version: int | None = None, action: str = "memory.update") -> Memory:
+async def apply_changes(
+    ctx: Ctx,
+    m: Memory,
+    changes: dict[str, Any],
+    reason: str,
+    *,
+    expected_version: int | None = None,
+    action: str = "memory.update",
+) -> Memory:
     """Versioned mutation. Caller must hold the row lock (lock_memory)."""
     if expected_version is not None and expected_version != m.version:
         raise Conflict("version mismatch", current_version=m.version, expected_version=expected_version)
@@ -206,16 +277,26 @@ async def apply_changes(ctx: Ctx, m: Memory, changes: dict[str, Any], reason: st
     m.version += 1
     m.updated_at = utcnow()
     await ctx.db.flush()
-    ctx.db.add(MemoryVersion(organization_id=m.organization_id, memory_id=m.id, version=m.version,
-                             snapshot_json=snapshot(m), change_reason=reason, actor_type=ctx.principal.actor_type,
-                             actor_id=ctx.principal.actor_id))
-    await audit.record(ctx, action, "memory", m.id, workspace_id=m.workspace_id, before=before,
-                       after={**snapshot(m), "reason": reason})
+    ctx.db.add(
+        MemoryVersion(
+            organization_id=m.organization_id,
+            memory_id=m.id,
+            version=m.version,
+            snapshot_json=snapshot(m),
+            change_reason=reason,
+            actor_type=ctx.principal.actor_type,
+            actor_id=ctx.principal.actor_id,
+        )
+    )
+    await audit.record(
+        ctx, action, "memory", m.id, workspace_id=m.workspace_id, before=before, after={**snapshot(m), "reason": reason}
+    )
     return m
 
 
-async def transition(ctx: Ctx, m: Memory, target: MemoryStatus, reason: str,
-                     extra: dict[str, Any] | None = None) -> Memory:
+async def transition(
+    ctx: Ctx, m: Memory, target: MemoryStatus, reason: str, extra: dict[str, Any] | None = None
+) -> Memory:
     if m.status == target.value and not extra:
         return m
     changes: dict[str, Any] = {"status": target.value, **(extra or {})}
@@ -223,17 +304,27 @@ async def transition(ctx: Ctx, m: Memory, target: MemoryStatus, reason: str,
 
 
 async def evidence_count(ctx: Ctx, memory_id: uuid.UUID) -> int:
-    return int(await ctx.db.scalar(select(func.count()).select_from(MemoryEvidence)
-                                   .where(MemoryEvidence.memory_id == memory_id)) or 0)
+    return int(
+        await ctx.db.scalar(
+            select(func.count()).select_from(MemoryEvidence).where(MemoryEvidence.memory_id == memory_id)
+        )
+        or 0
+    )
 
 
 async def add_evidence(ctx: Ctx, m: Memory, ev: EvidenceInput) -> bool:
     res = await ctx.db.execute(
-        pg_insert(MemoryEvidence).values(
-            organization_id=m.organization_id, memory_id=m.id, source_type=ev.source_type.value,
-            source_id=str(ev.source_id), relation=ev.relation, weight=ev.weight,
+        pg_insert(MemoryEvidence)
+        .values(
+            organization_id=m.organization_id,
+            memory_id=m.id,
+            source_type=ev.source_type.value,
+            source_id=str(ev.source_id),
+            relation=ev.relation,
+            weight=ev.weight,
             excerpt=redact_text(ev.excerpt)[:1000],
-        ).on_conflict_do_nothing(index_elements=["memory_id", "source_type", "source_id", "relation"])
+        )
+        .on_conflict_do_nothing(index_elements=["memory_id", "source_type", "source_id", "relation"])
         .returning(MemoryEvidence.id)
     )
     return res.scalar_one_or_none() is not None
@@ -243,43 +334,71 @@ async def copy_evidence(ctx: Ctx, source: Memory, target: Memory) -> int:
     rows = (await ctx.db.scalars(select(MemoryEvidence).where(MemoryEvidence.memory_id == source.id))).all()
     n = 0
     for r in rows:
-        n += await add_evidence(ctx, target, EvidenceInput(EvidenceSourceType(r.source_type), r.source_id,
-                                                           r.relation, r.weight, r.excerpt))
+        n += await add_evidence(
+            ctx, target, EvidenceInput(EvidenceSourceType(r.source_type), r.source_id, r.relation, r.weight, r.excerpt)
+        )
     return n
 
 
-async def add_relation(ctx: Ctx, source: Memory, target: Memory, relation: RelationType,
-                       metadata: dict[str, Any] | None = None) -> bool:
+async def add_relation(
+    ctx: Ctx, source: Memory, target: Memory, relation: RelationType, metadata: dict[str, Any] | None = None
+) -> bool:
     if source.id == target.id:
         raise ValidationFailed("a memory cannot relate to itself")
     if source.organization_id != target.organization_id:
         raise NotFound("memory not found")
     res = await ctx.db.execute(
-        pg_insert(MemoryRelation).values(
-            organization_id=source.organization_id, source_memory_id=source.id, target_memory_id=target.id,
-            relation=relation.value, metadata_json=metadata or {},
-        ).on_conflict_do_nothing(index_elements=["source_memory_id", "target_memory_id", "relation"])
+        pg_insert(MemoryRelation)
+        .values(
+            organization_id=source.organization_id,
+            source_memory_id=source.id,
+            target_memory_id=target.id,
+            relation=relation.value,
+            metadata_json=metadata or {},
+        )
+        .on_conflict_do_nothing(index_elements=["source_memory_id", "target_memory_id", "relation"])
         .returning(MemoryRelation.id)
     )
     created = res.scalar_one_or_none() is not None
     if created:
-        await audit.record(ctx, "memory.relation.add", "memory", source.id, workspace_id=source.workspace_id,
-                           after={"target": str(target.id), "relation": relation.value, **(metadata or {})})
+        await audit.record(
+            ctx,
+            "memory.relation.add",
+            "memory",
+            source.id,
+            workspace_id=source.workspace_id,
+            after={"target": str(target.id), "relation": relation.value, **(metadata or {})},
+        )
     return created
 
 
 async def supersede(ctx: Ctx, old: Memory, new: Memory, reason: str) -> None:
     """Preserve history: old memory is superseded (never overwritten) and points to its successor."""
     await add_relation(ctx, new, old, RelationType.SUPERSEDES, {"reason": reason})
-    await transition(ctx, old, MemoryStatus.SUPERSEDED, reason,
-                     {"metadata_json": {**old.metadata_json, "superseded_by": str(new.id)}})
+    await transition(
+        ctx,
+        old,
+        MemoryStatus.SUPERSEDED,
+        reason,
+        {"metadata_json": {**old.metadata_json, "superseded_by": str(new.id)}},
+    )
 
 
 # ---------------------------------------------------------------- queries
-async def list_memories(ctx: Ctx, *, workspace_id: uuid.UUID | None, statuses: list[str] | None,
-                        types: list[str] | None, scope_type: str | None, project_id: uuid.UUID | None,
-                        layer: int | None, review_state: str | None, q: str | None, limit: int,
-                        cursor: uuid.UUID | None) -> list[Memory]:
+async def list_memories(
+    ctx: Ctx,
+    *,
+    workspace_id: uuid.UUID | None,
+    statuses: list[str] | None,
+    types: list[str] | None,
+    scope_type: str | None,
+    project_id: uuid.UUID | None,
+    layer: int | None,
+    review_state: str | None,
+    q: str | None,
+    limit: int,
+    cursor: uuid.UUID | None,
+) -> list[Memory]:
     query = _base_query(ctx)
     if workspace_id:
         query = query.where(or_(Memory.workspace_id == workspace_id, Memory.workspace_id.is_(None)))
@@ -305,14 +424,24 @@ async def list_memories(ctx: Ctx, *, workspace_id: uuid.UUID | None, statuses: l
 
 async def history(ctx: Ctx, memory_id: uuid.UUID) -> list[MemoryVersion]:
     m = await get_memory(ctx, memory_id)
-    return list((await ctx.db.scalars(select(MemoryVersion).where(MemoryVersion.memory_id == m.id)
-                                       .order_by(MemoryVersion.version))).all())
+    return list(
+        (
+            await ctx.db.scalars(
+                select(MemoryVersion).where(MemoryVersion.memory_id == m.id).order_by(MemoryVersion.version)
+            )
+        ).all()
+    )
 
 
 async def evidence(ctx: Ctx, memory_id: uuid.UUID) -> list[MemoryEvidence]:
     m = await get_memory(ctx, memory_id)
-    return list((await ctx.db.scalars(select(MemoryEvidence).where(MemoryEvidence.memory_id == m.id)
-                                       .order_by(MemoryEvidence.created_at))).all())
+    return list(
+        (
+            await ctx.db.scalars(
+                select(MemoryEvidence).where(MemoryEvidence.memory_id == m.id).order_by(MemoryEvidence.created_at)
+            )
+        ).all()
+    )
 
 
 async def resolve_evidence_sources(ctx: Ctx, rows: list[MemoryEvidence]) -> dict[str, dict[str, Any]]:
@@ -321,20 +450,30 @@ async def resolve_evidence_sources(ctx: Ctx, rows: list[MemoryEvidence]) -> dict
     out: dict[str, dict[str, Any]] = {}
     exp_ids = [uuid.UUID(r.source_id) for r in rows if r.source_type == "experience"]
     if exp_ids:
-        for e in (await ctx.db.scalars(select(Experience).where(Experience.id.in_(exp_ids),
-                                                                Experience.organization_id == org))).all():
-            out[str(e.id)] = {"task": e.task, "outcome": e.outcome, "observation": e.observation,
-                              "action": e.action, "result": e.result, "agent_id": str(e.agent_id or ""),
-                              "source": e.source, "created_at": e.created_at.isoformat()}
+        for e in (
+            await ctx.db.scalars(
+                select(Experience).where(Experience.id.in_(exp_ids), Experience.organization_id == org)
+            )
+        ).all():
+            out[str(e.id)] = {
+                "task": e.task,
+                "outcome": e.outcome,
+                "observation": e.observation,
+                "action": e.action,
+                "result": e.result,
+                "agent_id": str(e.agent_id or ""),
+                "source": e.source,
+                "created_at": e.created_at.isoformat(),
+            }
     mem_ids = [uuid.UUID(r.source_id) for r in rows if r.source_type == "memory"]
     if mem_ids:
-        for mm in (await ctx.db.scalars(select(Memory).where(Memory.id.in_(mem_ids),
-                                                             Memory.organization_id == org))).all():
+        for mm in (
+            await ctx.db.scalars(select(Memory).where(Memory.id.in_(mem_ids), Memory.organization_id == org))
+        ).all():
             out[str(mm.id)] = {"title": mm.title, "status": mm.status, "type": mm.type}
     ev_ids = [uuid.UUID(r.source_id) for r in rows if r.source_type == "event"]
     if ev_ids:
-        for ev in (await ctx.db.scalars(select(Event).where(Event.id.in_(ev_ids),
-                                                            Event.organization_id == org))).all():
+        for ev in (await ctx.db.scalars(select(Event).where(Event.id.in_(ev_ids), Event.organization_id == org))).all():
             out[str(ev.id)] = {"type": ev.type, "payload": ev.payload_json}
     return out
 
@@ -342,10 +481,16 @@ async def resolve_evidence_sources(ctx: Ctx, rows: list[MemoryEvidence]) -> dict
 async def relations(ctx: Ctx, memory_id: uuid.UUID) -> list[tuple[MemoryRelation, Memory]]:
     m = await get_memory(ctx, memory_id)
     other = Memory
-    q_out = (select(MemoryRelation, other).join(other, other.id == MemoryRelation.target_memory_id)
-             .where(MemoryRelation.source_memory_id == m.id, visible_filter(ctx)))
-    q_in = (select(MemoryRelation, other).join(other, other.id == MemoryRelation.source_memory_id)
-            .where(MemoryRelation.target_memory_id == m.id, visible_filter(ctx)))
+    q_out = (
+        select(MemoryRelation, other)
+        .join(other, other.id == MemoryRelation.target_memory_id)
+        .where(MemoryRelation.source_memory_id == m.id, visible_filter(ctx))
+    )
+    q_in = (
+        select(MemoryRelation, other)
+        .join(other, other.id == MemoryRelation.source_memory_id)
+        .where(MemoryRelation.target_memory_id == m.id, visible_filter(ctx))
+    )
     rows = [(r, o) for r, o in (await ctx.db.execute(q_out)).all()]
     rows += [(r, o) for r, o in (await ctx.db.execute(q_in)).all()]
     return rows
@@ -353,16 +498,27 @@ async def relations(ctx: Ctx, memory_id: uuid.UUID) -> list[tuple[MemoryRelation
 
 async def usage(ctx: Ctx, memory_id: uuid.UUID, limit: int = 50) -> list[tuple[RetrievalTraceItem, RetrievalTrace]]:
     m = await get_memory(ctx, memory_id)
-    q = (select(RetrievalTraceItem, RetrievalTrace).join(RetrievalTrace, RetrievalTrace.id == RetrievalTraceItem.trace_id)
-         .where(RetrievalTraceItem.memory_id == m.id, RetrievalTrace.organization_id == ctx.principal.organization_id)
-         .order_by(RetrievalTraceItem.created_at.desc()).limit(limit))
+    q = (
+        select(RetrievalTraceItem, RetrievalTrace)
+        .join(RetrievalTrace, RetrievalTrace.id == RetrievalTraceItem.trace_id)
+        .where(RetrievalTraceItem.memory_id == m.id, RetrievalTrace.organization_id == ctx.principal.organization_id)
+        .order_by(RetrievalTraceItem.created_at.desc())
+        .limit(limit)
+    )
     return [(i, t) for i, t in (await ctx.db.execute(q)).all()]
 
 
 async def feedback_list(ctx: Ctx, memory_id: uuid.UUID) -> list[MemoryFeedback]:
     m = await get_memory(ctx, memory_id)
-    return list((await ctx.db.scalars(select(MemoryFeedback).where(MemoryFeedback.memory_id == m.id)
-                                       .order_by(MemoryFeedback.created_at.desc()))).all())
+    return list(
+        (
+            await ctx.db.scalars(
+                select(MemoryFeedback)
+                .where(MemoryFeedback.memory_id == m.id)
+                .order_by(MemoryFeedback.created_at.desc())
+            )
+        ).all()
+    )
 
 
 # ---------------------------------------------------------------- API-level operations

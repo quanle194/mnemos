@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import time
 
 import redis.asyncio as aioredis
@@ -14,8 +15,9 @@ WAKE_KEY = "mnemos:jobs:wake"
 
 class RedisFacade:
     def __init__(self, url: str) -> None:
-        self.client: aioredis.Redis = aioredis.from_url(url, decode_responses=True, socket_timeout=5,
-                                                        socket_connect_timeout=3)
+        self.client: aioredis.Redis = aioredis.from_url(
+            url, decode_responses=True, socket_timeout=5, socket_connect_timeout=3
+        )
 
     async def ping(self) -> bool:
         try:
@@ -32,13 +34,13 @@ class RedisFacade:
         except (RedisError, OSError) as exc:
             log.warning("redis_wake_failed", error=str(exc))
 
-    async def wait_for_wake(self, timeout: float) -> None:
+    async def wait_for_wake(self, wait_seconds: float) -> None:
         try:
-            await self.client.brpop([WAKE_KEY], timeout=max(1, int(timeout)))
+            await self.client.brpop([WAKE_KEY], timeout=max(1, int(wait_seconds)))
         except (RedisError, OSError):
             import asyncio
 
-            await asyncio.sleep(timeout)
+            await asyncio.sleep(wait_seconds)
 
     async def rate_limit(self, key: str, limit: int, window_seconds: int = 60) -> tuple[bool, int]:
         """Fixed-window counter. Returns (allowed, remaining). Fails open if Redis is unavailable."""
@@ -66,10 +68,8 @@ class RedisFacade:
             return False
 
     async def heartbeat(self, worker_id: str, ttl_seconds: int = 30) -> None:
-        try:
+        with contextlib.suppress(RedisError, OSError):
             await self.client.set(f"mnemos:worker:{worker_id}", str(time.time()), ex=ttl_seconds)
-        except (RedisError, OSError):
-            pass
 
     async def live_workers(self) -> list[str]:
         try:

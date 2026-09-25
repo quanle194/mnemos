@@ -8,8 +8,16 @@ from app.domain.enums import PRIVILEGED_TYPES, MemoryType, ValidationDecision
 from app.domain.poisoning import InjectionAssessment
 
 # Types that describe observations rather than prescriptions: never checked for polarity contradictions.
-OBSERVATIONAL_TYPES = frozenset({MemoryType.WARNING, MemoryType.FAILURE, MemoryType.SUCCESS, MemoryType.PATTERN,
-                                 MemoryType.CONTEXT, MemoryType.RELATIONSHIP})
+OBSERVATIONAL_TYPES = frozenset(
+    {
+        MemoryType.WARNING,
+        MemoryType.FAILURE,
+        MemoryType.SUCCESS,
+        MemoryType.PATTERN,
+        MemoryType.CONTEXT,
+        MemoryType.RELATIONSHIP,
+    }
+)
 
 
 @dataclass(frozen=True)

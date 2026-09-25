@@ -17,24 +17,31 @@ log = structlog.get_logger(__name__)
 
 
 class ApiError(Exception):
-    def __init__(self, status: int, code: str, message: str, details: dict[str, Any] | None = None,
-                 headers: dict[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        status: int,
+        code: str,
+        message: str,
+        details: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         super().__init__(message)
         self.status, self.code, self.message = status, code, message
         self.details = details or {}
         self.headers = headers
 
 
-def error_response(status: int, code: str, message: str, details: dict[str, Any] | None = None,
-                   headers: dict[str, str] | None = None) -> JSONResponse:
-    body = {"error": {"code": code, "message": message, "details": details or {},
-                      "request_id": request_id_var.get()}}
+def error_response(
+    status: int, code: str, message: str, details: dict[str, Any] | None = None, headers: dict[str, str] | None = None
+) -> JSONResponse:
+    body = {"error": {"code": code, "message": message, "details": details or {}, "request_id": request_id_var.get()}}
     return JSONResponse(body, status_code=status, headers=headers)
 
 
 def _jsonable(d: dict[str, Any]) -> dict[str, Any]:
-    return {k: (v if isinstance(v, str | int | float | bool | type(None) | list | dict) else str(v))
-            for k, v in d.items()}
+    return {
+        k: (v if isinstance(v, str | int | float | bool | type(None) | list | dict) else str(v)) for k, v in d.items()
+    }
 
 
 def install(app: FastAPI) -> None:

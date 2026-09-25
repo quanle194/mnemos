@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from enum import StrEnum
 from typing import Any
 
 from pgvector.sqlalchemy import Vector
@@ -30,7 +31,7 @@ from app.domain import enums as E
 DIM = get_settings().embedding_dimensions
 
 
-def _enum_check(column: str, enum: type) -> str:
+def _enum_check(column: str, enum: type[StrEnum]) -> str:
     values = ", ".join(f"'{v.value}'" for v in enum)
     return f"{column} IN ({values})"
 
@@ -44,13 +45,15 @@ def created() -> Mapped[datetime]:
 
 
 def org_fk() -> Mapped[uuid.UUID]:
-    return mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False,
-                         index=True)
+    return mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
 
 def ws_fk(nullable: bool = False) -> Mapped[Any]:
-    return mapped_column(UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=nullable,
-                         index=True)
+    return mapped_column(
+        UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=nullable, index=True
+    )
 
 
 def jsonb() -> Mapped[dict[str, Any]]:
@@ -101,10 +104,10 @@ class Session(Base):
     id: Mapped[uuid.UUID] = pk()
     organization_id: Mapped[uuid.UUID] = org_fk()
     workspace_id: Mapped[uuid.UUID] = ws_fk()
-    project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id",
-                                                          ondelete="SET NULL"))
-    agent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("agents.id",
-                                                        ondelete="SET NULL"))
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="SET NULL")
+    )
+    agent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="SET NULL"))
     started_at: Mapped[datetime] = created()
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     metadata_json: Mapped[dict[str, Any]] = jsonb()
@@ -167,8 +170,12 @@ class Episode(Base):
     __tablename__ = "episodes"
     __table_args__ = (
         UniqueConstraint("workspace_id", "session_id", "task_id", postgresql_nulls_not_distinct=True),
-        Index("ix_episodes_embedding_hnsw", "embedding", postgresql_using="hnsw",
-              postgresql_ops={"embedding": "vector_cosine_ops"}),
+        Index(
+            "ix_episodes_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
     )
     id: Mapped[uuid.UUID] = pk()
     organization_id: Mapped[uuid.UUID] = org_fk()
@@ -204,8 +211,9 @@ class Experience(Base):
     agent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     session_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     task_id: Mapped[str | None] = mapped_column(String(200))
-    episode_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("episodes.id",
-                                                          ondelete="SET NULL"))
+    episode_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("episodes.id", ondelete="SET NULL")
+    )
     task: Mapped[str] = mapped_column(Text, nullable=False)
     observation: Mapped[str] = mapped_column(Text, nullable=False, default="")
     action: Mapped[str] = mapped_column(Text, nullable=False, default="")
@@ -230,16 +238,29 @@ class Memory(Base):
         CheckConstraint(_enum_check("scope_type", E.ScopeType), name="scope_type"),
         CheckConstraint(_enum_check("review_state", E.ReviewState), name="review_state"),
         CheckConstraint("layer IN (3, 4)", name="layer"),
-        CheckConstraint("confidence BETWEEN 0 AND 1 AND trust_score BETWEEN 0 AND 1 AND importance BETWEEN 0 AND 1 "
-                        "AND utility_score BETWEEN 0 AND 1", name="scores"),
+        CheckConstraint(
+            "confidence BETWEEN 0 AND 1 AND trust_score BETWEEN 0 AND 1 AND importance BETWEEN 0 AND 1 "
+            "AND utility_score BETWEEN 0 AND 1",
+            name="scores",
+        ),
         CheckConstraint("version >= 1", name="version"),
-        Index("ix_memories_active_scope", "organization_id", "workspace_id", "scope_type", "scope_id",
-              postgresql_where=text("status IN ('active','validated')")),
+        Index(
+            "ix_memories_active_scope",
+            "organization_id",
+            "workspace_id",
+            "scope_type",
+            "scope_id",
+            postgresql_where=text("status IN ('active','validated')"),
+        ),
         Index("ix_memories_search_tsv", "search_tsv", postgresql_using="gin"),
         Index("ix_memories_ws_status", "workspace_id", "status"),
         Index("ix_memories_content_hash", "workspace_id", "content_hash"),
-        Index("ix_memories_embedding_hnsw", "embedding", postgresql_using="hnsw",
-              postgresql_ops={"embedding": "vector_cosine_ops"}),
+        Index(
+            "ix_memories_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
     )
     id: Mapped[uuid.UUID] = pk()
     organization_id: Mapped[uuid.UUID] = org_fk()
@@ -280,8 +301,9 @@ class MemoryVersion(Base):
     __table_args__ = (UniqueConstraint("memory_id", "version"),)
     id: Mapped[uuid.UUID] = pk()
     organization_id: Mapped[uuid.UUID] = org_fk()
-    memory_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("memories.id",
-                                                  ondelete="CASCADE"), nullable=False, index=True)
+    memory_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("memories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     snapshot_json: Mapped[dict[str, Any]] = jsonb()
     change_reason: Mapped[str] = mapped_column(Text, nullable=False)
@@ -300,8 +322,9 @@ class MemoryEvidence(Base):
     )
     id: Mapped[uuid.UUID] = pk()
     organization_id: Mapped[uuid.UUID] = org_fk()
-    memory_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("memories.id",
-                                                  ondelete="CASCADE"), nullable=False, index=True)
+    memory_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("memories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     source_type: Mapped[str] = mapped_column(String(30), nullable=False)
     source_id: Mapped[str] = mapped_column(String(100), nullable=False)
     relation: Mapped[str] = mapped_column(String(20), nullable=False, default="supports")
@@ -319,10 +342,12 @@ class MemoryRelation(Base):
     )
     id: Mapped[uuid.UUID] = pk()
     organization_id: Mapped[uuid.UUID] = org_fk()
-    source_memory_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("memories.id",
-                                                         ondelete="CASCADE"), nullable=False, index=True)
-    target_memory_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("memories.id",
-                                                         ondelete="CASCADE"), nullable=False, index=True)
+    source_memory_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("memories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    target_memory_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("memories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     relation: Mapped[str] = mapped_column(String(20), nullable=False)
     metadata_json: Mapped[dict[str, Any]] = jsonb()
     created_at: Mapped[datetime] = created()
@@ -333,8 +358,9 @@ class MemoryFeedback(Base):
     __table_args__ = (CheckConstraint(_enum_check("value", E.FeedbackValue), name="value"),)
     id: Mapped[uuid.UUID] = pk()
     organization_id: Mapped[uuid.UUID] = org_fk()
-    memory_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("memories.id",
-                                                  ondelete="CASCADE"), nullable=False, index=True)
+    memory_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("memories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     workspace_id: Mapped[uuid.UUID | None] = ws_fk(nullable=True)
     agent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     session_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
@@ -355,10 +381,12 @@ class Conflict(Base):
     id: Mapped[uuid.UUID] = pk()
     organization_id: Mapped[uuid.UUID] = org_fk()
     workspace_id: Mapped[uuid.UUID | None] = ws_fk(nullable=True)
-    candidate_memory_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("memories.id",
-                                                            ondelete="CASCADE"), nullable=False)
-    existing_memory_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("memories.id",
-                                                           ondelete="CASCADE"), nullable=False)
+    candidate_memory_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("memories.id", ondelete="CASCADE"), nullable=False
+    )
+    existing_memory_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("memories.id", ondelete="CASCADE"), nullable=False
+    )
     conflict_type: Mapped[str] = mapped_column(String(40), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="open")
     analysis_json: Mapped[dict[str, Any]] = jsonb()
@@ -373,8 +401,14 @@ class DreamJob(Base):
         CheckConstraint(_enum_check("mode", E.DreamMode), name="mode"),
         CheckConstraint(_enum_check("status", E.DreamStatus), name="status"),
         CheckConstraint("trigger_type IN ('manual','schedule','event_count','memory_growth')", name="trigger"),
-        Index("uq_dream_jobs_window", "workspace_id", "mode", "window_hash", unique=True,
-              postgresql_where=text("window_hash IS NOT NULL")),
+        Index(
+            "uq_dream_jobs_window",
+            "workspace_id",
+            "mode",
+            "window_hash",
+            unique=True,
+            postgresql_where=text("window_hash IS NOT NULL"),
+        ),
     )
     id: Mapped[uuid.UUID] = pk()
     organization_id: Mapped[uuid.UUID] = org_fk()
@@ -417,10 +451,12 @@ class RetrievalTraceItem(Base):
     __table_args__ = (UniqueConstraint("trace_id", "memory_id"),)
     id: Mapped[uuid.UUID] = pk()
     organization_id: Mapped[uuid.UUID] = org_fk()
-    trace_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("retrieval_traces.id",
-                                                 ondelete="CASCADE"), nullable=False)
-    memory_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("memories.id",
-                                                  ondelete="CASCADE"), nullable=False, index=True)
+    trace_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("retrieval_traces.id", ondelete="CASCADE"), nullable=False
+    )
+    memory_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("memories.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     rank: Mapped[int] = mapped_column(Integer, nullable=False)
     score: Mapped[float] = mapped_column(Float, nullable=False)
     created_at: Mapped[datetime] = created()

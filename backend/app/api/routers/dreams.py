@@ -16,19 +16,25 @@ router = APIRouter(prefix="/v1/dreams", tags=["dreams"])
 
 
 @router.post("", status_code=202, response_model=DreamOut)
-async def request_dream(body: DreamIn, request: Request, ctx: CtxDep,
-                        idempotency_key: Annotated[str | None, Header()] = None) -> JSONResponse:
+async def request_dream(
+    body: DreamIn, request: Request, ctx: CtxDep, idempotency_key: Annotated[str | None, Header()] = None
+) -> JSONResponse:
     async def handler() -> DreamOut:
-        job, _ = await dreaming_service.request_dream(ctx, body.workspace_id, body.mode, "manual",
-                                                      dedupe_window=body.dedupe_window)
+        job, _ = await dreaming_service.request_dream(
+            ctx, body.workspace_id, body.mode, "manual", dedupe_window=body.dedupe_window
+        )
         return DreamOut.model_validate(job)
 
     return await idempotency.run(ctx, idempotency_key, "POST", request.url.path, body.model_dump(), 202, handler)
 
 
 @router.get("")
-async def list_dreams(ctx: CtxDep, workspace_id: uuid.UUID, limit: Annotated[int, Query(ge=1, le=200)] = 50,
-                      cursor: uuid.UUID | None = None) -> dict:
+async def list_dreams(
+    ctx: CtxDep,
+    workspace_id: uuid.UUID,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    cursor: uuid.UUID | None = None,
+) -> dict:
     return page(await dreaming_service.list_dreams(ctx, workspace_id, limit, cursor), limit, DreamOut)
 
 

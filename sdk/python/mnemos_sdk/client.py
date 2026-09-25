@@ -33,8 +33,13 @@ def _raise_for(resp: httpx.Response) -> None:
     except ValueError:
         err = {}
     cls = {409: ConflictError, 404: NotFoundError, 401: AuthError, 403: AuthError}.get(resp.status_code, MnemosError)
-    raise cls(resp.status_code, err.get("code", "error"), err.get("message", resp.text[:300]),
-              err.get("details"), err.get("request_id"))
+    raise cls(
+        resp.status_code,
+        err.get("code", "error"),
+        err.get("message", resp.text[:300]),
+        err.get("details"),
+        err.get("request_id"),
+    )
 
 
 class _Base:
@@ -54,8 +59,15 @@ class _Base:
 class MnemosClient(_Base):
     """Synchronous client."""
 
-    def __init__(self, base_url: str = "http://localhost:8000", api_key: str | None = None, *,
-                 timeout: float = 30.0, max_retries: int = 3, transport: httpx.BaseTransport | None = None) -> None:
+    def __init__(
+        self,
+        base_url: str = "http://localhost:8000",
+        api_key: str | None = None,
+        *,
+        timeout: float = 30.0,
+        max_retries: int = 3,
+        transport: httpx.BaseTransport | None = None,
+    ) -> None:
         super().__init__(base_url, api_key, timeout, max_retries)
         self._http = httpx.Client(base_url=self.base_url, headers=self.headers, timeout=timeout, transport=transport)
 
@@ -68,8 +80,16 @@ class MnemosClient(_Base):
     def __exit__(self, *exc: object) -> None:
         self.close()
 
-    def request(self, method: str, path: str, *, json: Any = None, params: Mapping[str, Any] | None = None,
-                headers: Mapping[str, str] | None = None, retry: bool = True) -> Any:
+    def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        json: Any = None,
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+        retry: bool = True,
+    ) -> Any:
         delay = 0.3
         for attempt in range(self.max_retries + 1):
             try:
@@ -87,37 +107,88 @@ class MnemosClient(_Base):
             delay *= 2
         raise RuntimeError("unreachable")
 
-    def _write(self, method: str, path: str, body: Any, idempotency_key: str | None = None,
-               headers: Mapping[str, str] | None = None) -> Any:
+    def _write(
+        self,
+        method: str,
+        path: str,
+        body: Any,
+        idempotency_key: str | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> Any:
         h = {**self._write_headers(idempotency_key), **(headers or {})}
         return self.request(method, path, json=body, headers=h)
 
     # ---- core ergonomics (spec: context, experience, search_memories, get_memory, feedback, dream)
-    def context(self, workspace_id: str, query: str, *, token_budget: int = 2000, project_id: str | None = None,
-                agent_id: str | None = None, session_id: str | None = None, memory_types: list[str] | None = None,
-                max_items: int = 10, **extra: Any) -> Json:
-        body = _clean({"workspace_id": workspace_id, "query": query, "token_budget": token_budget,
-                       "project_id": project_id, "agent_id": agent_id, "session_id": session_id,
-                       "memory_types": memory_types, "max_items": max_items, **extra})
+    def context(
+        self,
+        workspace_id: str,
+        query: str,
+        *,
+        token_budget: int = 2000,
+        project_id: str | None = None,
+        agent_id: str | None = None,
+        session_id: str | None = None,
+        memory_types: list[str] | None = None,
+        max_items: int = 10,
+        **extra: Any,
+    ) -> Json:
+        body = _clean(
+            {
+                "workspace_id": workspace_id,
+                "query": query,
+                "token_budget": token_budget,
+                "project_id": project_id,
+                "agent_id": agent_id,
+                "session_id": session_id,
+                "memory_types": memory_types,
+                "max_items": max_items,
+                **extra,
+            }
+        )
         return self.request("POST", "/v1/context", json=body)  # read-only: safe to retry
 
-    def experience(self, workspace_id: str, task: str, outcome: str, *, observation: str = "", action: str = "",
-                   result: str = "", idempotency_key: str | None = None, **extra: Any) -> Json:
-        body = _clean({"workspace_id": workspace_id, "task": task, "outcome": outcome, "observation": observation,
-                       "action": action, "result": result, **extra})
+    def experience(
+        self,
+        workspace_id: str,
+        task: str,
+        outcome: str,
+        *,
+        observation: str = "",
+        action: str = "",
+        result: str = "",
+        idempotency_key: str | None = None,
+        **extra: Any,
+    ) -> Json:
+        body = _clean(
+            {
+                "workspace_id": workspace_id,
+                "task": task,
+                "outcome": outcome,
+                "observation": observation,
+                "action": action,
+                "result": result,
+                **extra,
+            }
+        )
         return self._write("POST", "/v1/experiences", body, idempotency_key)
 
     def search_memories(self, workspace_id: str, query: str, **extra: Any) -> Json:
-        return self.request("POST", "/v1/memories/search", json=_clean({"workspace_id": workspace_id,
-                                                                        "query": query, **extra}))
+        return self.request(
+            "POST", "/v1/memories/search", json=_clean({"workspace_id": workspace_id, "query": query, **extra})
+        )
 
     def get_memory(self, memory_id: str) -> Json:
         return self.request("GET", f"/v1/memories/{memory_id}")
 
-    def feedback(self, memory_id: str, value: str, *, note: str = "", idempotency_key: str | None = None,
-                 **extra: Any) -> Json:
-        return self._write("POST", f"/v1/memories/{memory_id}/feedback", _clean({"value": value, "note": note,
-                                                                                **extra}), idempotency_key)
+    def feedback(
+        self, memory_id: str, value: str, *, note: str = "", idempotency_key: str | None = None, **extra: Any
+    ) -> Json:
+        return self._write(
+            "POST",
+            f"/v1/memories/{memory_id}/feedback",
+            _clean({"value": value, "note": note, **extra}),
+            idempotency_key,
+        )
 
     def dream(self, workspace_id: str, mode: str, *, idempotency_key: str | None = None) -> Json:
         return self._write("POST", "/v1/dreams", {"workspace_id": workspace_id, "mode": mode}, idempotency_key)
@@ -129,15 +200,28 @@ class MnemosClient(_Base):
     def get_experience(self, experience_id: str) -> Json:
         return self.request("GET", f"/v1/experiences/{experience_id}")
 
-    def remember(self, workspace_id: str, type: str, title: str, content: str, *,
-                 idempotency_key: str | None = None, **extra: Any) -> Json:
+    def remember(
+        self,
+        workspace_id: str,
+        type: str,
+        title: str,
+        content: str,
+        *,
+        idempotency_key: str | None = None,
+        **extra: Any,
+    ) -> Json:
         """Propose a candidate memory (never trusted until validated)."""
         body = _clean({"workspace_id": workspace_id, "type": type, "title": title, "content": content, **extra})
         return self._write("POST", "/v1/memories", body, idempotency_key)
 
     def update_memory(self, memory_id: str, expected_version: int, **changes: Any) -> Json:
-        return self.request("PATCH", f"/v1/memories/{memory_id}", json=_clean(changes),
-                            headers={"If-Match": f'"{expected_version}"'}, retry=False)
+        return self.request(
+            "PATCH",
+            f"/v1/memories/{memory_id}",
+            json=_clean(changes),
+            headers={"If-Match": f'"{expected_version}"'},
+            retry=False,
+        )
 
     def memory_history(self, memory_id: str) -> list[Json]:
         return self.request("GET", f"/v1/memories/{memory_id}/history")
@@ -151,10 +235,12 @@ class MnemosClient(_Base):
     def list_memories(self, **params: Any) -> Json:
         return self.request("GET", "/v1/memories", params=params)
 
-    def events(self, workspace_id: str, events: list[Json], *, idempotency_key: str | None = None,
-               **extra: Any) -> Json:
-        return self._write("POST", "/v1/events", _clean({"workspace_id": workspace_id, "events": events, **extra}),
-                           idempotency_key)
+    def events(
+        self, workspace_id: str, events: list[Json], *, idempotency_key: str | None = None, **extra: Any
+    ) -> Json:
+        return self._write(
+            "POST", "/v1/events", _clean({"workspace_id": workspace_id, "events": events, **extra}), idempotency_key
+        )
 
     def health(self) -> Json:
         return self.request("GET", "/health/ready")
@@ -163,9 +249,13 @@ class MnemosClient(_Base):
         return self.request("GET", "/v1/me")
 
     def bootstrap(self, bootstrap_secret: str, organization_name: str, workspace_name: str = "default") -> Json:
-        return self.request("POST", "/v1/admin/bootstrap", json={"organization_name": organization_name,
-                                                                 "workspace_name": workspace_name},
-                            headers={"X-Bootstrap-Secret": bootstrap_secret}, retry=False)
+        return self.request(
+            "POST",
+            "/v1/admin/bootstrap",
+            json={"organization_name": organization_name, "workspace_name": workspace_name},
+            headers={"X-Bootstrap-Secret": bootstrap_secret},
+            retry=False,
+        )
 
     def wait_for_learning(self, experience_id: str, timeout: float = 30.0, poll: float = 0.3) -> Json:
         """Poll until the experience was processed and its candidates left the pending validation state."""
@@ -188,12 +278,19 @@ class MnemosClient(_Base):
 class AsyncMnemosClient(_Base):
     """Asynchronous client with the same surface as MnemosClient (core methods)."""
 
-    def __init__(self, base_url: str = "http://localhost:8000", api_key: str | None = None, *,
-                 timeout: float = 30.0, max_retries: int = 3,
-                 transport: httpx.AsyncBaseTransport | None = None) -> None:
+    def __init__(
+        self,
+        base_url: str = "http://localhost:8000",
+        api_key: str | None = None,
+        *,
+        timeout: float = 30.0,
+        max_retries: int = 3,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
         super().__init__(base_url, api_key, timeout, max_retries)
-        self._http = httpx.AsyncClient(base_url=self.base_url, headers=self.headers, timeout=timeout,
-                                       transport=transport)
+        self._http = httpx.AsyncClient(
+            base_url=self.base_url, headers=self.headers, timeout=timeout, transport=transport
+        )
 
     async def aclose(self) -> None:
         await self._http.aclose()
@@ -204,13 +301,20 @@ class AsyncMnemosClient(_Base):
     async def __aexit__(self, *exc: object) -> None:
         await self.aclose()
 
-    async def request(self, method: str, path: str, *, json: Any = None, params: Mapping[str, Any] | None = None,
-                      headers: Mapping[str, str] | None = None, retry: bool = True) -> Any:
+    async def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        json: Any = None,
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+        retry: bool = True,
+    ) -> Any:
         delay = 0.3
         for attempt in range(self.max_retries + 1):
             try:
-                resp = await self._http.request(method, path, json=json, params=_clean(params or {}),
-                                                headers=headers)
+                resp = await self._http.request(method, path, json=json, params=_clean(params or {}), headers=headers)
             except httpx.TransportError:
                 if not retry or attempt >= self.max_retries:
                     raise
@@ -228,34 +332,59 @@ class AsyncMnemosClient(_Base):
         return await self.request(method, path, json=body, headers=self._write_headers(idempotency_key))
 
     async def context(self, workspace_id: str, query: str, *, token_budget: int = 2000, **extra: Any) -> Json:
-        return await self.request("POST", "/v1/context", json=_clean({"workspace_id": workspace_id, "query": query,
-                                                                      "token_budget": token_budget, **extra}))
+        return await self.request(
+            "POST",
+            "/v1/context",
+            json=_clean({"workspace_id": workspace_id, "query": query, "token_budget": token_budget, **extra}),
+        )
 
-    async def experience(self, workspace_id: str, task: str, outcome: str, *, idempotency_key: str | None = None,
-                         **extra: Any) -> Json:
-        return await self._write("POST", "/v1/experiences", _clean({"workspace_id": workspace_id, "task": task,
-                                                                    "outcome": outcome, **extra}), idempotency_key)
+    async def experience(
+        self, workspace_id: str, task: str, outcome: str, *, idempotency_key: str | None = None, **extra: Any
+    ) -> Json:
+        return await self._write(
+            "POST",
+            "/v1/experiences",
+            _clean({"workspace_id": workspace_id, "task": task, "outcome": outcome, **extra}),
+            idempotency_key,
+        )
 
     async def search_memories(self, workspace_id: str, query: str, **extra: Any) -> Json:
-        return await self.request("POST", "/v1/memories/search", json=_clean({"workspace_id": workspace_id,
-                                                                              "query": query, **extra}))
+        return await self.request(
+            "POST", "/v1/memories/search", json=_clean({"workspace_id": workspace_id, "query": query, **extra})
+        )
 
     async def get_memory(self, memory_id: str) -> Json:
         return await self.request("GET", f"/v1/memories/{memory_id}")
 
-    async def feedback(self, memory_id: str, value: str, *, note: str = "", idempotency_key: str | None = None,
-                       **extra: Any) -> Json:
-        return await self._write("POST", f"/v1/memories/{memory_id}/feedback",
-                                 _clean({"value": value, "note": note, **extra}), idempotency_key)
+    async def feedback(
+        self, memory_id: str, value: str, *, note: str = "", idempotency_key: str | None = None, **extra: Any
+    ) -> Json:
+        return await self._write(
+            "POST",
+            f"/v1/memories/{memory_id}/feedback",
+            _clean({"value": value, "note": note, **extra}),
+            idempotency_key,
+        )
 
     async def dream(self, workspace_id: str, mode: str, *, idempotency_key: str | None = None) -> Json:
         return await self._write("POST", "/v1/dreams", {"workspace_id": workspace_id, "mode": mode}, idempotency_key)
 
-    async def remember(self, workspace_id: str, type: str, title: str, content: str, *,
-                       idempotency_key: str | None = None, **extra: Any) -> Json:
-        return await self._write("POST", "/v1/memories", _clean({"workspace_id": workspace_id, "type": type,
-                                                                 "title": title, "content": content, **extra}),
-                                 idempotency_key)
+    async def remember(
+        self,
+        workspace_id: str,
+        type: str,
+        title: str,
+        content: str,
+        *,
+        idempotency_key: str | None = None,
+        **extra: Any,
+    ) -> Json:
+        return await self._write(
+            "POST",
+            "/v1/memories",
+            _clean({"workspace_id": workspace_id, "type": type, "title": title, "content": content, **extra}),
+            idempotency_key,
+        )
 
     async def get_experience(self, experience_id: str) -> Json:
         return await self.request("GET", f"/v1/experiences/{experience_id}")

@@ -38,8 +38,14 @@ def create_app(settings: Settings | None = None, container: Container | None = N
     )
     errors.install(app)
     if settings.cors_origins:
-        app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=False,
-                           allow_methods=["*"], allow_headers=["*"], expose_headers=["ETag", "X-Request-ID"])
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origins,
+            allow_credentials=False,
+            allow_methods=["*"],
+            allow_headers=["*"],
+            expose_headers=["ETag", "X-Request-ID"],
+        )
     hosts = [h.strip() for h in settings.allowed_hosts.split(",") if h.strip()]
     if hosts and hosts != ["*"]:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=hosts)

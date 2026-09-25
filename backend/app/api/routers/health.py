@@ -41,8 +41,11 @@ async def ready(container: Annotated[Container, Depends(get_container)]) -> JSON
     checks["redis"] = {"ok": redis_ok}
     ok = ok and redis_ok
     checks["workers"] = await container.redis.live_workers()
-    checks["providers"] = {"llm": container.llm.name, "embedding": container.embedder.name,
-                           "embedding_dimensions": container.embedder.dimensions}
+    checks["providers"] = {
+        "llm": container.llm.name,
+        "embedding": container.embedder.name,
+        "embedding_dimensions": container.embedder.dimensions,
+    }
     return JSONResponse({"status": "ok" if ok else "unavailable", "checks": checks}, status_code=200 if ok else 503)
 
 

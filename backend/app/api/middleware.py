@@ -40,8 +40,9 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             if status >= 500:
                 REQUEST_ERRORS.labels(path).inc()
             if not path.startswith("/health") and path != "/metrics":
-                log.info("request", method=request.method, path=path, status=status,
-                         duration_ms=round(elapsed * 1000, 2))
+                log.info(
+                    "request", method=request.method, path=path, status=status, duration_ms=round(elapsed * 1000, 2)
+                )
             request_id_var.reset(token)
 
 
@@ -78,5 +79,5 @@ class BodySizeLimitMiddleware:
             await error_response(413, "payload_too_large", f"body exceeds {self.max_bytes} bytes")(scope, receive, send)
 
 
-class _TooLarge(Exception):  # noqa: N818
+class _TooLarge(Exception):
     pass

@@ -45,11 +45,15 @@ async def get_ctx(
 ) -> Ctx:
     raw = _extract_key(authorization, x_api_key)
     principal = await tenancy_service.resolve_api_key(db, container.settings, raw, request_id_var.get())
-    allowed, remaining = await container.redis.rate_limit(principal.actor_id, container.settings.rate_limit_per_minute)
+    allowed, _remaining = await container.redis.rate_limit(principal.actor_id, container.settings.rate_limit_per_minute)
     if not allowed:
-        raise ApiError(429, "rate_limited", "rate limit exceeded", {"limit_per_minute":
-                                                                  container.settings.rate_limit_per_minute},
-                       headers={"Retry-After": "60"})
+        raise ApiError(
+            429,
+            "rate_limited",
+            "rate limit exceeded",
+            {"limit_per_minute": container.settings.rate_limit_per_minute},
+            headers={"Retry-After": "60"},
+        )
     await db.commit()  # persist last_used_at; subsequent work runs in a fresh transaction
     return Ctx(db=db, principal=principal, container=container)
 

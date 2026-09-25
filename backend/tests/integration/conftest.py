@@ -43,9 +43,16 @@ async def _recreate_db() -> None:
 
 @pytest.fixture(scope="session")
 def settings() -> Settings:
-    return Settings(app_env="test", database_url=_db_url(), redis_url=REDIS_URL,
-                    api_bootstrap_secret=BOOTSTRAP_SECRET, log_json=False, log_level="WARNING",
-                    rate_limit_per_minute=100_000, scheduler_enabled=False)
+    return Settings(
+        app_env="test",
+        database_url=_db_url(),
+        redis_url=REDIS_URL,
+        api_bootstrap_secret=BOOTSTRAP_SECRET,
+        log_json=False,
+        log_level="WARNING",
+        rate_limit_per_minute=100_000,
+        scheduler_enabled=False,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -110,9 +117,11 @@ class Tenant:
 
 
 async def bootstrap_tenant(client: httpx.AsyncClient, name: str | None = None) -> Tenant:
-    r = await client.post("/v1/admin/bootstrap", json={"organization_name": name or f"org-{uuid.uuid4().hex[:6]}",
-                                                       "workspace_name": "main"},
-                          headers={"X-Bootstrap-Secret": BOOTSTRAP_SECRET})
+    r = await client.post(
+        "/v1/admin/bootstrap",
+        json={"organization_name": name or f"org-{uuid.uuid4().hex[:6]}", "workspace_name": "main"},
+        headers={"X-Bootstrap-Secret": BOOTSTRAP_SECRET},
+    )
     assert r.status_code == 201, r.text
     return Tenant(client, r.json())
 

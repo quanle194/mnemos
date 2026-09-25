@@ -6,8 +6,9 @@ from typing import Any
 class MnemosError(Exception):
     """Raised for non-2xx API responses. Carries the structured error contract."""
 
-    def __init__(self, status: int, code: str, message: str, details: dict[str, Any] | None = None,
-                 request_id: str | None = None) -> None:
+    def __init__(
+        self, status: int, code: str, message: str, details: dict[str, Any] | None = None, request_id: str | None = None
+    ) -> None:
         super().__init__(f"[{status} {code}] {message}")
         self.status = status
         self.code = code

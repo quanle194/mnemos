@@ -74,8 +74,9 @@ def recency_score(updated_at: datetime, now: datetime, half_life_days: float) ->
     return math.exp(-age_days / half_life_days * math.log(2))
 
 
-def score(item: RankInput, *, lexical_norm: float, now: datetime, weights: dict[str, float],
-          half_life_days: float) -> ScoreBreakdown:
+def score(
+    item: RankInput, *, lexical_norm: float, now: datetime, weights: dict[str, float], half_life_days: float
+) -> ScoreBreakdown:
     semantic = clamp01(item.semantic)
     relevance = SEMANTIC_WEIGHT * semantic + LEXICAL_WEIGHT * lexical_norm
     trust = clamp01(item.trust) * clamp01(item.confidence)

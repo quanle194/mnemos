@@ -30,3 +30,11 @@ class EmbeddingProvider(Protocol):
     async def embed(self, texts: list[str]) -> list[list[float]]: ...
 
     async def aclose(self) -> None: ...
+
+
+async def structured[T: BaseModel](llm: LLMProvider, task: str, payload: dict[str, Any], schema: type[T]) -> T:
+    """Typed wrapper around LLMProvider.generate_json (asserts the validated schema type)."""
+    out = await llm.generate_json(task, payload)
+    if not isinstance(out, schema):
+        raise ProviderError(f"provider returned {type(out).__name__} for task {task}, expected {schema.__name__}")
+    return out

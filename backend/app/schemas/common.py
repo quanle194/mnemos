@@ -2,18 +2,16 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
-
-T = TypeVar("T")
 
 
 class ORM(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class Page(BaseModel, Generic[T]):
+class Page[T](BaseModel):
     items: list[T]
     next_cursor: str | None = None
 

@@ -6,6 +6,7 @@ The fake LLM implements every structured task with transparent rules operating o
 from __future__ import annotations
 
 import hashlib
+import itertools
 import math
 import re
 from collections import Counter
@@ -19,7 +20,9 @@ from app.domain.text import content_tokens, jaccard, normalize, tokens, truncate
 from app.providers.schemas import TASK_SCHEMAS
 
 _SENT_SPLIT = re.compile(r"(?<=[.!?])\s+")
-_FAILURE_WORDS = re.compile(r"(?i)\b(fail(?:ed|ure|s)?|error|timed? ?out|broke|crash(?:ed)?|exception|denied|refused)\b")
+_FAILURE_WORDS = re.compile(
+    r"(?i)\b(fail(?:ed|ure|s)?|error|timed? ?out|broke|crash(?:ed)?|exception|denied|refused)\b"
+)
 
 
 def _short(text: str, limit: int = 120) -> str:
@@ -67,15 +70,17 @@ class FakeLLMProvider:
             ltype = lesson_type
             if ltype == "lesson" and is_policy_like(lesson):
                 ltype = "rule"
-            candidates.append({
-                "type": ltype,
-                "title": _short(lesson, 80),
-                "content": lesson.strip(),
-                "confidence": round(min(0.95, base_conf * (0.95 if outcome == "success" else 0.8)), 3),
-                "importance": importance,
-                "evidence_ids": [eid],
-                "rationale": "agent-declared lesson",
-            })
+            candidates.append(
+                {
+                    "type": ltype,
+                    "title": _short(lesson, 80),
+                    "content": lesson.strip(),
+                    "confidence": round(min(0.95, base_conf * (0.95 if outcome == "success" else 0.8)), 3),
+                    "importance": importance,
+                    "evidence_ids": [eid],
+                    "rationale": "agent-declared lesson",
+                }
+            )
         if candidates:
             return {"candidates": candidates}
 
@@ -109,18 +114,31 @@ class FakeLLMProvider:
             content = f"Partial result when {task}: {(action or obs).rstrip('.')}. {result}".strip()
             conf = base_conf * 0.6
             title = f"Partial: {_short(task, 90)}"
-        candidates.append({
-            "type": mtype, "title": title, "content": content.strip(), "confidence": round(min(conf, 0.95), 3),
-            "importance": importance, "evidence_ids": [eid], "rationale": f"derived from {outcome} experience",
-        })
+        candidates.append(
+            {
+                "type": mtype,
+                "title": title,
+                "content": content.strip(),
+                "confidence": round(min(conf, 0.95), 3),
+                "importance": importance,
+                "evidence_ids": [eid],
+                "rationale": f"derived from {outcome} experience",
+            }
+        )
         # Policy-like sentences become separate rule candidates (they will face stricter validation).
         for sent in _sentences(" ".join([obs, result]))[:3]:
             if is_policy_like(sent) and len(sent) >= 20:
-                candidates.append({
-                    "type": "rule", "title": _short(sent, 80), "content": sent,
-                    "confidence": round(min(base_conf * 0.8, 0.9), 3), "importance": importance,
-                    "evidence_ids": [eid], "rationale": "policy-like statement found in experience",
-                })
+                candidates.append(
+                    {
+                        "type": "rule",
+                        "title": _short(sent, 80),
+                        "content": sent,
+                        "confidence": round(min(base_conf * 0.8, 0.9), 3),
+                        "importance": importance,
+                        "evidence_ids": [eid],
+                        "rationale": "policy-like statement found in experience",
+                    }
+                )
         return {"candidates": candidates}
 
     def _task_episode_summary(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -128,8 +146,10 @@ class FakeLLMProvider:
         last = exps[-1]
         lines = [f"{_short(last.get('task', ''), 150)} ({len(exps)} step(s))."]
         for e in exps[-8:]:
-            lines.append(f"- [{e.get('outcome')}] {_short(e.get('action') or e.get('observation') or '', 140)}"
-                         f" -> {_short(e.get('result') or '', 100)}")
+            lines.append(
+                f"- [{e.get('outcome')}] {_short(e.get('action') or e.get('observation') or '', 140)}"
+                f" -> {_short(e.get('result') or '', 100)}"
+            )
         importance = max(float(e.get("importance", 0.5)) for e in exps)
         return {"summary": "\n".join(lines), "outcome": last.get("outcome", "unknown"), "importance": importance}
 
@@ -150,16 +170,23 @@ class FakeLLMProvider:
                 continue
             best = successes[-1]
             failures = [e for e in g if e.get("outcome") == "failure"]
-            content = (f"Across {len(g)} attempts at '{_short(g[0]['task'], 100)}', the approach that worked: "
-                       f"{(best.get('action') or best.get('result') or '').rstrip('.')}.")
+            content = (
+                f"Across {len(g)} attempts at '{_short(g[0]['task'], 100)}', the approach that worked: "
+                f"{(best.get('action') or best.get('result') or '').rstrip('.')}."
+            )
             if failures:
                 content += f" Avoid: {(failures[0].get('action') or failures[0].get('observation') or '').rstrip('.')}."
-            lessons.append({
-                "type": "lesson", "title": f"Reflection: {_short(g[0]['task'], 90)}", "content": content,
-                "confidence": round(min(0.9, 0.5 + 0.1 * len(g)), 3),
-                "importance": max(float(e.get("importance", 0.5)) for e in g),
-                "evidence_ids": [str(e["id"]) for e in g], "rationale": "repeated trajectories",
-            })
+            lessons.append(
+                {
+                    "type": "lesson",
+                    "title": f"Reflection: {_short(g[0]['task'], 90)}",
+                    "content": content,
+                    "confidence": round(min(0.9, 0.5 + 0.1 * len(g)), 3),
+                    "importance": max(float(e.get("importance", 0.5)) for e in g),
+                    "evidence_ids": [str(e["id"]) for e in g],
+                    "rationale": "repeated trajectories",
+                }
+            )
         return {"lessons": lessons}
 
     def _task_pattern_summary(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -169,8 +196,10 @@ class FakeLLMProvider:
         common = [w for w, c in words.most_common(8) if c >= 2][:5]
         sample = exps[0]
         what = sample.get("observation") or sample.get("result") or sample.get("action") or ""
-        content = (f"Recurring {kind} observed {len(exps)} times for '{_short(sample.get('task', ''), 100)}': "
-                   f"{what.rstrip('.')}.")
+        content = (
+            f"Recurring {kind} observed {len(exps)} times for '{_short(sample.get('task', ''), 100)}': "
+            f"{what.rstrip('.')}."
+        )
         if common:
             content += f" Common signals: {', '.join(common)}."
         return {
@@ -183,8 +212,12 @@ class FakeLLMProvider:
     def _task_consolidation(self, payload: dict[str, Any]) -> dict[str, Any]:
         mems = payload["memories"]
         best = max(mems, key=lambda m: (float(m.get("confidence", 0)), len(m.get("content", ""))))
-        return {"type": best["type"], "title": best["title"], "content": best["content"],
-                "confidence": round(max(float(m.get("confidence", 0)) for m in mems), 3)}
+        return {
+            "type": best["type"],
+            "title": best["title"],
+            "content": best["content"],
+            "confidence": round(max(float(m.get("confidence", 0)) for m in mems), 3),
+        }
 
     def _task_generalization(self, payload: dict[str, Any]) -> dict[str, Any]:
         mems = payload["memories"]
@@ -238,10 +271,10 @@ class FakeEmbeddingProvider:
         vec = [0.0] * self.dimensions
         toks = [_stem(t) for t in content_tokens(text)] or [_stem(t) for t in tokens(text)]
         feats: list[tuple[str, float]] = [(f"w:{t}", 1.0) for t in toks]
-        feats += [(f"b:{a}_{b}", 0.5) for a, b in zip(toks, toks[1:], strict=False)]
+        feats += [(f"b:{a}_{b}", 0.5) for a, b in itertools.pairwise(toks)]
         for t in toks:
             padded = f"#{t}#"
-            feats += [(f"c:{padded[i:i + 3]}", 0.15) for i in range(len(padded) - 2)]
+            feats += [(f"c:{padded[i : i + 3]}", 0.15) for i in range(len(padded) - 2)]
         for feat, weight in feats:
             idx, sign = self._bucket(feat)
             vec[idx] += sign * weight

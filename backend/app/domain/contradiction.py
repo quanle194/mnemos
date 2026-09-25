@@ -17,8 +17,10 @@ _NEGATION = re.compile(
 )
 _INSTEAD = re.compile(r"(?i)\b(?:use|prefer|choose|run)\s+([\w.\-/]+)\s+(?:instead of|rather than|over)\s+([\w.\-/]+)")
 _NUM = re.compile(r"\b\d+(?:\.\d+)?[a-z%]*\b")
-_SUPERSEDE_HINT = re.compile(r"(?i)\b(no longer|deprecated|now (?:use|uses|requires)|as of|changed to|replaced by|"
-                             r"instead of|superseded|outdated)\b")
+_SUPERSEDE_HINT = re.compile(
+    r"(?i)\b(no longer|deprecated|now (?:use|uses|requires)|as of|changed to|replaced by|"
+    r"superseded|outdated)\b"
+)
 
 
 @dataclass(frozen=True)
@@ -40,9 +42,33 @@ def _overlap(a: str, b: str) -> float:
     return len(sa & sb) / min(len(sa), len(sb))
 
 
-_NEG_TOKENS = frozenset({"not", "never", "don't", "doesn't", "avoid", "without", "stop", "disable", "disabled",
-                         "forbid", "forbidden", "deprecated", "mustn't", "shouldn't", "cannot", "can't", "won't",
-                         "longer", "fail", "fails"}) | STOPWORDS
+_NEG_TOKENS = (
+    frozenset(
+        {
+            "not",
+            "never",
+            "don't",
+            "doesn't",
+            "avoid",
+            "without",
+            "stop",
+            "disable",
+            "disabled",
+            "forbid",
+            "forbidden",
+            "deprecated",
+            "mustn't",
+            "shouldn't",
+            "cannot",
+            "can't",
+            "won't",
+            "longer",
+            "fail",
+            "fails",
+        }
+    )
+    | STOPWORDS
+)
 
 
 def has_negation(text: str) -> bool:
@@ -61,14 +87,16 @@ def detect(existing: str, candidate: str, *, min_overlap: float = 0.5) -> Contra
         xa, ya = ia.group(1).lower(), ia.group(2).lower()
         xb, yb = ib.group(1).lower(), ib.group(2).lower()
         if xa == yb and ya == xb:
-            return ContradictionSignal(True, "preference_swap", overlap, hint,
-                                       f"'{xa} instead of {ya}' vs '{xb} instead of {yb}'")
+            return ContradictionSignal(
+                True, "preference_swap", overlap, hint, f"'{xa} instead of {ya}' vs '{xb} instead of {yb}'"
+            )
 
     if has_negation(a) != has_negation(b):
         return ContradictionSignal(True, "polarity", overlap, hint, "same topic with opposite polarity")
 
     nums_a, nums_b = set(_NUM.findall(a)), set(_NUM.findall(b))
     if nums_a and nums_b and nums_a != nums_b and overlap >= max(min_overlap, 0.7):
-        return ContradictionSignal(True, "value_mismatch", overlap, hint,
-                                   f"different values {sorted(nums_a)} vs {sorted(nums_b)}")
+        return ContradictionSignal(
+            True, "value_mismatch", overlap, hint, f"different values {sorted(nums_a)} vs {sorted(nums_b)}"
+        )
     return ContradictionSignal(False, None, overlap, hint, "compatible")

@@ -51,8 +51,12 @@ class Worker:
             async with self.container.sessions() as db:
                 await queue.complete(db, job.id, self.worker_id, result or {})
             JOBS_PROCESSED.labels(kind=job.kind, outcome="succeeded").inc()
-            log.info("job_succeeded", kind=job.kind, attempts=job.attempts,
-                     duration_ms=round((time.perf_counter() - started) * 1000, 1))
+            log.info(
+                "job_succeeded",
+                kind=job.kind,
+                attempts=job.attempts,
+                duration_ms=round((time.perf_counter() - started) * 1000, 1),
+            )
         except Exception as exc:
             async with self.container.sessions() as db:
                 status = await queue.fail(db, job, self.worker_id, f"{type(exc).__name__}: {exc}")
@@ -102,7 +106,8 @@ class Worker:
             try:
                 await self.container.redis.heartbeat(self.worker_id)
                 if self.settings.scheduler_enabled and await self.container.redis.try_lock(
-                        "scheduler", self.worker_id, ttl_seconds=60):
+                    "scheduler", self.worker_id, ttl_seconds=60
+                ):
                     await self.schedule_once()
                 async with self.container.sessions() as db:
                     for status, n in (await queue.depth(db)).items():
@@ -117,12 +122,23 @@ class Worker:
         bucket = int(utcnow().timestamp() // (s.lifecycle_interval_minutes * 60))
         created = 0
         async with self.container.sessions() as db:
-            if await queue.enqueue(db, kind=queue.LIFECYCLE_SWEEP, payload={}, idempotency_key=f"lifecycle:{bucket}",
-                                   organization_id=None, max_attempts=3):
+            if await queue.enqueue(
+                db,
+                kind=queue.LIFECYCLE_SWEEP,
+                payload={},
+                idempotency_key=f"lifecycle:{bucket}",
+                organization_id=None,
+                max_attempts=3,
+            ):
                 created += 1
             await db.commit()
-            workspaces = (await db.execute(select(Workspace.id, Workspace.organization_id)
-                                           .join(Organization, Organization.id == Workspace.organization_id))).all()
+            workspaces = (
+                await db.execute(
+                    select(Workspace.id, Workspace.organization_id).join(
+                        Organization, Organization.id == Workspace.organization_id
+                    )
+                )
+            ).all()
         for ws_id, org_id in workspaces:
             async with self.container.sessions() as db:
                 ctx = Ctx(db=db, principal=Principal.system(org_id, "scheduler"), container=self.container)
@@ -152,15 +168,9 @@ async def run_worker(container: Container, health_port: int | None = None) -> No
         loop.add_signal_handler(sig, worker.stop.set)
     server_task = None
     if health_port:
-        import uvicorn
+        from app.jobs.health import serve_health
 
-        from app.jobs.health import build_health_app
-
-        config = uvicorn.Config(build_health_app(container, worker), host="0.0.0.0", port=health_port,  # noqa: S104
-                                log_level="warning", lifespan="off")
-        server = uvicorn.Server(config)
-        server.install_signal_handlers = lambda: None  # type: ignore[method-assign]
-        server_task = asyncio.create_task(server.serve())
+        server_task = asyncio.create_task(serve_health(container, worker, "0.0.0.0", health_port))  # noqa: S104
     try:
         await worker.run()
     finally:

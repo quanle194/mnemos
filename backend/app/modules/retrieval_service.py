@@ -68,8 +68,10 @@ def build_tsquery(query: str) -> str:
 
 def _scope_filter(req: RetrievalRequest, org_id: uuid.UUID) -> Any:
     if req.scope_mode == "workspace":
-        return or_(Memory.workspace_id == req.workspace_id,
-                   and_(Memory.scope_type == "organization", Memory.scope_id == org_id))
+        return or_(
+            Memory.workspace_id == req.workspace_id,
+            and_(Memory.scope_type == "organization", Memory.scope_id == org_id),
+        )
     conds = [
         and_(Memory.scope_type == "organization", Memory.scope_id == org_id),
         and_(Memory.scope_type == "workspace", Memory.scope_id == req.workspace_id),
@@ -91,8 +93,9 @@ async def retrieve(ctx: Ctx, req: RetrievalRequest) -> tuple[list[Scored], dict[
     ctx.principal.require(Permission.MEMORY_READ)
     if not req.query.strip():
         raise ValidationFailed("query must not be empty")
-    refs = await tenancy_service.resolve_refs(ctx, workspace_id=req.workspace_id, project_id=req.project_id,
-                                              agent_id=req.agent_id, session_id=None)
+    refs = await tenancy_service.resolve_refs(
+        ctx, workspace_id=req.workspace_id, project_id=req.project_id, agent_id=req.agent_id, session_id=None
+    )
     org_id = refs.workspace.organization_id
     now = req.valid_at or utcnow()
     statuses = req.statuses or [s.value for s in RETRIEVABLE_STATUSES]
@@ -138,10 +141,19 @@ async def retrieve(ctx: Ctx, req: RetrievalRequest) -> tuple[list[Scored], dict[
     scored: list[Scored] = []
     for m, s, lx, sources in rows.values():
         bd = ranking.score(
-            ranking.RankInput(semantic=s, lexical=lx, importance=m.importance, trust=m.trust_score,
-                              confidence=m.confidence, utility=m.utility_score, updated_at=m.updated_at,
-                              scope_type=m.scope_type),
-            lexical_norm=ranking.normalize_lexical(lx, max_lex), now=utcnow(), weights=weights,
+            ranking.RankInput(
+                semantic=s,
+                lexical=lx,
+                importance=m.importance,
+                trust=m.trust_score,
+                confidence=m.confidence,
+                utility=m.utility_score,
+                updated_at=m.updated_at,
+                scope_type=m.scope_type,
+            ),
+            lexical_norm=ranking.normalize_lexical(lx, max_lex),
+            now=utcnow(),
+            weights=weights,
             half_life_days=ctx.settings.recency_half_life_days,
         )
         bd.reasons.insert(0, "+".join(sorted(sources)))
@@ -149,8 +161,14 @@ async def retrieve(ctx: Ctx, req: RetrievalRequest) -> tuple[list[Scored], dict[
             scored.append(Scored(m, bd, _as_list(m.embedding)))
     scored.sort(key=lambda x: x.breakdown.total, reverse=True)
     meta = {
-        "filters": {"statuses": statuses, "types": req.types, "layers": req.layers, "scope_mode": req.scope_mode,
-                    "valid_at": now.isoformat(), "min_relevance": req.min_relevance},
+        "filters": {
+            "statuses": statuses,
+            "types": req.types,
+            "layers": req.layers,
+            "scope_mode": req.scope_mode,
+            "valid_at": now.isoformat(),
+            "min_relevance": req.min_relevance,
+        },
         "weights": weights,
         "candidate_count": len(rows),
         "tsquery": tsq_text,
@@ -191,11 +209,13 @@ class ContextResult:
 async def evidence_summary(ctx: Ctx, memory_ids: list[uuid.UUID]) -> dict[uuid.UUID, dict[str, int]]:
     if not memory_ids:
         return {}
-    rows = (await ctx.db.execute(
-        select(MemoryEvidence.memory_id, MemoryEvidence.source_type, func.count())
-        .where(MemoryEvidence.memory_id.in_(memory_ids))
-        .group_by(MemoryEvidence.memory_id, MemoryEvidence.source_type)
-    )).all()
+    rows = (
+        await ctx.db.execute(
+            select(MemoryEvidence.memory_id, MemoryEvidence.source_type, func.count())
+            .where(MemoryEvidence.memory_id.in_(memory_ids))
+            .group_by(MemoryEvidence.memory_id, MemoryEvidence.source_type)
+        )
+    ).all()
     out: dict[uuid.UUID, dict[str, int]] = defaultdict(dict)
     for mid, st, n in rows:
         out[mid][st] = int(n)
@@ -223,8 +243,16 @@ async def build_context(ctx: Ctx, req: RetrievalRequest, token_budget: int) -> C
         if len(selected) >= req.limit:
             excluded.append({"id": str(s.memory.id), "reason": "max_items"})
             continue
-        dup_of = next((c for c in selected if s.embedding and c.scored.embedding and
-                       ranking.cosine(s.embedding, c.scored.embedding) >= ctx.settings.context_dedup_threshold), None)
+        dup_of = next(
+            (
+                c
+                for c in selected
+                if s.embedding
+                and c.scored.embedding
+                and ranking.cosine(s.embedding, c.scored.embedding) >= ctx.settings.context_dedup_threshold
+            ),
+            None,
+        )
         if dup_of is not None:
             excluded.append({"id": str(s.memory.id), "reason": f"near_duplicate_of:{dup_of.scored.memory.id}"})
             continue
@@ -247,41 +275,89 @@ async def build_context(ctx: Ctx, req: RetrievalRequest, token_budget: int) -> C
             metrics.STALE_MEMORY_SELECTED.inc()
     latency = (time.perf_counter() - t0) * 1000
     tokens_total = used if selected else 0
-    trace = await _store_trace(ctx, req, "context", meta, scored, [i.scored for i in selected], excluded,
-                               tokens_total, latency, record_usage=True, token_budget=token_budget)
+    trace = await _store_trace(
+        ctx,
+        req,
+        "context",
+        meta,
+        scored,
+        [i.scored for i in selected],
+        excluded,
+        tokens_total,
+        latency,
+        record_usage=True,
+        token_budget=token_budget,
+    )
     metrics.RETRIEVAL_LATENCY.labels(kind="context").observe(latency / 1000)
     metrics.RETRIEVAL_SELECTED.observe(len(selected))
     metrics.CONTEXT_TOKENS.observe(tokens_total)
     return ContextResult(rendered, selected, tokens_total, token_budget, trace.id, excluded, meta["candidate_count"])
 
 
-async def _store_trace(ctx: Ctx, req: RetrievalRequest, kind: str, meta: dict[str, Any], scored: list[Scored],
-                       selected: list[Scored], excluded: list[dict[str, Any]], tokens: int, latency_ms: float, *,
-                       record_usage: bool, token_budget: int | None = None) -> RetrievalTrace:
+async def _store_trace(
+    ctx: Ctx,
+    req: RetrievalRequest,
+    kind: str,
+    meta: dict[str, Any],
+    scored: list[Scored],
+    selected: list[Scored],
+    excluded: list[dict[str, Any]],
+    tokens: int,
+    latency_ms: float,
+    *,
+    record_usage: bool,
+    token_budget: int | None = None,
+) -> RetrievalTrace:
     trace = RetrievalTrace(
-        organization_id=ctx.principal.organization_id, workspace_id=req.workspace_id, kind=kind,
-        query=redact_text(req.query)[:2000], agent_id=req.agent_id,
-        request_json={"project_id": str(req.project_id or ""), "agent_id": str(req.agent_id or ""),
-                      "session_id": str(req.session_id or ""), "limit": req.limit, "token_budget": token_budget,
-                      "types": req.types, "include_candidates": req.include_candidates},
-        candidates_json={**meta, "items": [
-            {"id": str(s.memory.id), "status": s.memory.status, "scores": s.breakdown.as_dict()}
-            for s in scored[:100]
-        ], "excluded": excluded[:100]},
-        selected_json={"items": [
-            {"id": str(s.memory.id), "rank": i + 1, "score": s.breakdown.total, "reasons": s.breakdown.reasons}
-            for i, s in enumerate(selected)
-        ]},
-        context_tokens=tokens, latency_ms=round(latency_ms, 2),
+        organization_id=ctx.principal.organization_id,
+        workspace_id=req.workspace_id,
+        kind=kind,
+        query=redact_text(req.query)[:2000],
+        agent_id=req.agent_id,
+        request_json={
+            "project_id": str(req.project_id or ""),
+            "agent_id": str(req.agent_id or ""),
+            "session_id": str(req.session_id or ""),
+            "limit": req.limit,
+            "token_budget": token_budget,
+            "types": req.types,
+            "include_candidates": req.include_candidates,
+        },
+        candidates_json={
+            **meta,
+            "items": [
+                {"id": str(s.memory.id), "status": s.memory.status, "scores": s.breakdown.as_dict()}
+                for s in scored[:100]
+            ],
+            "excluded": excluded[:100],
+        },
+        selected_json={
+            "items": [
+                {"id": str(s.memory.id), "rank": i + 1, "score": s.breakdown.total, "reasons": s.breakdown.reasons}
+                for i, s in enumerate(selected)
+            ]
+        },
+        context_tokens=tokens,
+        latency_ms=round(latency_ms, 2),
     )
     ctx.db.add(trace)
     await ctx.db.flush()
     if record_usage and selected:
         for i, s in enumerate(selected):
-            ctx.db.add(RetrievalTraceItem(organization_id=trace.organization_id, trace_id=trace.id,
-                                          memory_id=s.memory.id, rank=i + 1, score=s.breakdown.total))
-        await ctx.db.execute(update(Memory).where(Memory.id.in_([s.memory.id for s in selected]))
-                             .values(retrieval_count=Memory.retrieval_count + 1, last_retrieved_at=utcnow()))
+            ctx.db.add(
+                RetrievalTraceItem(
+                    organization_id=trace.organization_id,
+                    trace_id=trace.id,
+                    memory_id=s.memory.id,
+                    rank=i + 1,
+                    score=s.breakdown.total,
+                )
+            )
+        await ctx.db.execute(
+            update(Memory)
+            .where(Memory.id.in_([s.memory.id for s in selected]))
+            .values(retrieval_count=Memory.retrieval_count + 1, last_retrieved_at=utcnow())
+        )
     return trace
 
 
@@ -289,9 +365,11 @@ async def get_trace(ctx: Ctx, trace_id: uuid.UUID) -> RetrievalTrace:
     from app.tenancy import NotFound
 
     ctx.principal.require(Permission.MEMORY_READ)
-    t = await ctx.db.scalar(select(RetrievalTrace).where(RetrievalTrace.id == trace_id,
-                                                         RetrievalTrace.organization_id ==
-                                                         ctx.principal.organization_id))
+    t = await ctx.db.scalar(
+        select(RetrievalTrace).where(
+            RetrievalTrace.id == trace_id, RetrievalTrace.organization_id == ctx.principal.organization_id
+        )
+    )
     if t is None or not ctx.principal.can_access_workspace(t.workspace_id):
         raise NotFound("trace not found")
     return t
@@ -300,9 +378,9 @@ async def get_trace(ctx: Ctx, trace_id: uuid.UUID) -> RetrievalTrace:
 async def list_traces(ctx: Ctx, workspace_id: uuid.UUID, limit: int, cursor: uuid.UUID | None) -> list[RetrievalTrace]:
     ctx.principal.require(Permission.MEMORY_READ)
     ws = await tenancy_service.get_workspace(ctx, workspace_id)
-    q = select(RetrievalTrace).where(RetrievalTrace.workspace_id == ws.id,
-                                     RetrievalTrace.organization_id == ctx.principal.organization_id)
+    q = select(RetrievalTrace).where(
+        RetrievalTrace.workspace_id == ws.id, RetrievalTrace.organization_id == ctx.principal.organization_id
+    )
     if cursor:
         q = q.where(RetrievalTrace.id < cursor)
     return list((await ctx.db.scalars(q.order_by(RetrievalTrace.id.desc()).limit(limit))).all())
-

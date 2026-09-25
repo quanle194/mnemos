@@ -24,8 +24,6 @@ from app.domain.enums import (
 )
 from app.schemas.common import ORM
 
-Score = Field(ge=0, le=1)
-
 
 class RefsIn(BaseModel):
     workspace_id: uuid.UUID
@@ -121,7 +119,7 @@ class WorkingMemoryIn(BaseModel):
     key: str = Field(min_length=1, max_length=200)
     content: str = Field(min_length=1, max_length=20000)
     ttl_seconds: int = Field(default=3600, ge=1, le=60 * 60 * 24 * 30)
-    importance: float = Score
+    importance: float = Field(default=0.5, ge=0, le=1)
 
 
 class WorkingMemoryOut(ORM):
@@ -420,7 +418,7 @@ class ContextOut(BaseModel):
     memories: list[ContextMemory]
     token_estimate: int
     token_budget: int
-    token_estimate_method: str = "chars/4 heuristic"
+    token_estimate_method: str = "chars/4 heuristic"  # noqa: S105 - not a secret
     retrieval_trace_id: uuid.UUID
     candidate_count: int
     excluded: list[dict[str, Any]]

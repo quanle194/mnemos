@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     cors_allowed_origins: str = ""
     allowed_hosts: str = "*"
 
-    api_bootstrap_secret: str = "change-me"
+    api_bootstrap_secret: str = "change-me"  # noqa: S105 - dev default, rejected in production
     api_key_pepper: str = ""
 
     llm_provider: Literal["fake", "openai", "ollama"] = "fake"

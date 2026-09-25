@@ -23,17 +23,33 @@ EMBED_MEMORY = "embed_memory"
 JOB_KINDS = (EXTRACT_EXPERIENCE, VALIDATE_CANDIDATE, RUN_DREAM, LIFECYCLE_SWEEP, EMBED_MEMORY)
 
 
-async def enqueue(db: AsyncSession, *, kind: str, payload: dict[str, Any], idempotency_key: str,
-                  organization_id: uuid.UUID | None, workspace_id: uuid.UUID | None = None,
-                  run_after: datetime | None = None, max_attempts: int = 5) -> uuid.UUID | None:
+async def enqueue(
+    db: AsyncSession,
+    *,
+    kind: str,
+    payload: dict[str, Any],
+    idempotency_key: str,
+    organization_id: uuid.UUID | None,
+    workspace_id: uuid.UUID | None = None,
+    run_after: datetime | None = None,
+    max_attempts: int = 5,
+) -> uuid.UUID | None:
     """Insert a job in the caller's transaction. Returns the job id, or None if the key already existed."""
     if kind not in JOB_KINDS:
         raise ValueError(f"unknown job kind {kind}")
     stmt = (
         insert(Job)
-        .values(id=new_id(), organization_id=organization_id, workspace_id=workspace_id, kind=kind,
-                payload_json=payload, idempotency_key=idempotency_key, status=JobStatus.QUEUED.value,
-                max_attempts=max_attempts, run_after=run_after or utcnow())
+        .values(
+            id=new_id(),
+            organization_id=organization_id,
+            workspace_id=workspace_id,
+            kind=kind,
+            payload_json=payload,
+            idempotency_key=idempotency_key,
+            status=JobStatus.QUEUED.value,
+            max_attempts=max_attempts,
+            run_after=run_after or utcnow(),
+        )
         .on_conflict_do_nothing(index_elements=[Job.idempotency_key])
         .returning(Job.id)
     )
@@ -69,7 +85,8 @@ async def claim(db: AsyncSession, worker_id: str, lease_seconds: int) -> Job | N
 
 async def extend_lease(db: AsyncSession, job_id: uuid.UUID, worker_id: str, lease_seconds: int) -> None:
     await db.execute(
-        update(Job).where(Job.id == job_id, Job.locked_by == worker_id, Job.status == "running")
+        update(Job)
+        .where(Job.id == job_id, Job.locked_by == worker_id, Job.status == "running")
         .values(locked_until=utcnow() + timedelta(seconds=lease_seconds))
     )
     await db.commit()
@@ -77,9 +94,16 @@ async def extend_lease(db: AsyncSession, job_id: uuid.UUID, worker_id: str, leas
 
 async def complete(db: AsyncSession, job_id: uuid.UUID, worker_id: str, result: dict[str, Any]) -> None:
     await db.execute(
-        update(Job).where(Job.id == job_id, Job.locked_by == worker_id)
-        .values(status=JobStatus.SUCCEEDED.value, result_json=result, locked_until=None, completed_at=utcnow(),
-                updated_at=utcnow(), last_error=None)
+        update(Job)
+        .where(Job.id == job_id, Job.locked_by == worker_id)
+        .values(
+            status=JobStatus.SUCCEEDED.value,
+            result_json=result,
+            locked_until=None,
+            completed_at=utcnow(),
+            updated_at=utcnow(),
+            last_error=None,
+        )
     )
     await db.commit()
 
@@ -92,9 +116,15 @@ async def fail(db: AsyncSession, job: Job, worker_id: str, error: str) -> str:
     dead = job.attempts >= job.max_attempts
     status = JobStatus.DEAD if dead else JobStatus.FAILED
     await db.execute(
-        update(Job).where(Job.id == job.id, Job.locked_by == worker_id)
-        .values(status=status.value, last_error=error[:4000], locked_until=None, updated_at=utcnow(),
-                run_after=utcnow() + timedelta(seconds=backoff_seconds(job.attempts)))
+        update(Job)
+        .where(Job.id == job.id, Job.locked_by == worker_id)
+        .values(
+            status=status.value,
+            last_error=error[:4000],
+            locked_until=None,
+            updated_at=utcnow(),
+            run_after=utcnow() + timedelta(seconds=backoff_seconds(job.attempts)),
+        )
     )
     await db.commit()
     return status.value
@@ -107,7 +137,8 @@ async def depth(db: AsyncSession) -> dict[str, int]:
 
 async def retry_dead(db: AsyncSession, job_id: uuid.UUID, organization_id: uuid.UUID) -> bool:
     res = await db.execute(
-        update(Job).where(Job.id == job_id, Job.organization_id == organization_id, Job.status == "dead")
+        update(Job)
+        .where(Job.id == job_id, Job.organization_id == organization_id, Job.status == "dead")
         .values(status="queued", attempts=0, run_after=utcnow(), updated_at=utcnow(), last_error=None)
     )
     return (res.rowcount or 0) > 0  # type: ignore[attr-defined]

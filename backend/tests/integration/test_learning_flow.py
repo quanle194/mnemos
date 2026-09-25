@@ -12,7 +12,7 @@ pytestmark = pytest.mark.integration
 RUN_A = {
     "task": "Deploy billing-api to staging",
     "observation": "Deployment failed: database migration timed out because the orders table was locked by the "
-                   "nightly batch job.",
+    "nightly batch job.",
     "action": "Paused the batch job with batchctl pause and re-ran the migration with --lock-timeout=5s.",
     "result": "Migration applied and the billing-api deployment succeeded.",
     "outcome": "success",
@@ -20,9 +20,18 @@ RUN_A = {
 
 
 async def test_experience_is_learned_and_retrieved_by_other_agent(tenant: Tenant, worker: Worker) -> None:
-    created = await tenant.ok("POST", "/v1/experiences", json={
-        "workspace_id": tenant.workspace_id, "project_name": "billing", "agent_name": "agent-a", **RUN_A,
-        "task_id": "deploy-1", "session_id": "00000000-0000-7000-8000-000000000001"})
+    created = await tenant.ok(
+        "POST",
+        "/v1/experiences",
+        json={
+            "workspace_id": tenant.workspace_id,
+            "project_name": "billing",
+            "agent_name": "agent-a",
+            **RUN_A,
+            "task_id": "deploy-1",
+            "session_id": "00000000-0000-7000-8000-000000000001",
+        },
+    )
     exp_id = created["experience"]["id"]
     assert created["learning"]["job_status"] == "queued"
     processed = await worker.drain()
@@ -46,9 +55,17 @@ async def test_experience_is_learned_and_retrieved_by_other_agent(tenant: Tenant
     projects = await tenant.ok("GET", f"/v1/workspaces/{tenant.workspace_id}/projects")
     project_id = projects[0]["id"]
     agent_b = await tenant.ok("POST", f"/v1/workspaces/{tenant.workspace_id}/agents", json={"name": "agent-b"})
-    ctx = await tenant.ok("POST", "/v1/context", json={
-        "workspace_id": tenant.workspace_id, "project_id": project_id, "agent_id": agent_b["id"],
-        "query": "deploy billing-api to staging migration", "token_budget": 800})
+    ctx = await tenant.ok(
+        "POST",
+        "/v1/context",
+        json={
+            "workspace_id": tenant.workspace_id,
+            "project_id": project_id,
+            "agent_id": agent_b["id"],
+            "query": "deploy billing-api to staging migration",
+            "token_budget": 800,
+        },
+    )
     ids = [m["id"] for m in ctx["memories"]]
     assert mem_id in ids
     item = ctx["memories"][ids.index(mem_id)]
