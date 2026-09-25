@@ -43,12 +43,21 @@ function ValueView({ k, v }: { k: string; v: unknown }): ReactNode {
       </span>
     )
   }
-  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return <span>{String(v)}</span>
+  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')
+    return <span>{String(v)}</span>
   return <code className="text-xs">{JSON.stringify(v)}</code>
 }
 
 /** Proposal/applied entries are memory ids or objects like {canonical, duplicates} / {members, title, consolidated}. */
-function EntryList({ entries, testId, conflictIds }: { entries: unknown[]; testId: string; conflictIds?: boolean }) {
+function EntryList({
+  entries,
+  testId,
+  conflictIds,
+}: {
+  entries: unknown[]
+  testId: string
+  conflictIds?: boolean
+}) {
   if (entries.length === 0) return <p className="text-sm text-muted-foreground">None</p>
   return (
     <ul className="flex flex-col divide-y rounded-md border" data-testid={testId}>

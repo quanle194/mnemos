@@ -105,7 +105,12 @@ export function SemanticSearch() {
                 onChange={(e) => setLimit(Math.max(1, Math.min(100, Number(e.target.value) || 10)))}
               />
             </div>
-            <Button type="submit" className="self-end" disabled={search.isPending} data-testid="memory-search-submit">
+            <Button
+              type="submit"
+              className="self-end"
+              disabled={search.isPending}
+              data-testid="memory-search-submit"
+            >
               <Search /> {search.isPending ? 'Searching…' : 'Search'}
             </Button>
           </div>
@@ -164,7 +169,11 @@ export function SemanticSearch() {
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">{truncate(item.memory.content, 320)}</p>
                     {item.reasons.length > 0 ? (
-                      <ul className="mt-2 flex flex-wrap gap-1.5" data-testid="search-result-reasons" aria-label="Reasons">
+                      <ul
+                        className="mt-2 flex flex-wrap gap-1.5"
+                        data-testid="search-result-reasons"
+                        aria-label="Reasons"
+                      >
                         {item.reasons.map((r) => (
                           <li key={r}>
                             <Badge variant="secondary" className="font-normal">
@@ -194,8 +203,8 @@ export function SemanticSearch() {
           </div>
         ) : !search.isPending && !search.isError ? (
           <p className="text-sm text-muted-foreground">
-            Hybrid retrieval (semantic + lexical + scope + trust + recency + utility). Each search records a retrieval
-            trace.
+            Hybrid retrieval (semantic + lexical + scope + trust + recency + utility). Each search records a
+            retrieval trace.
           </p>
         ) : null}
       </CardContent>

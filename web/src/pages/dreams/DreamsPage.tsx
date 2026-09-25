@@ -90,7 +90,9 @@ function DreamTrigger() {
             />
             <span>
               Skip if this exact input window was already dreamed
-              <span className="block text-xs text-muted-foreground">Idempotent re-runs return the earlier job.</span>
+              <span className="block text-xs text-muted-foreground">
+                Idempotent re-runs return the earlier job.
+              </span>
             </span>
           </label>
           {request.isError ? (
@@ -116,7 +118,10 @@ export function DreamsPage() {
   const anyActive = list.items.some((d) => isDreamActive(d))
   return (
     <>
-      <PageHeader title="Dreams" description="Asynchronous reflection, consolidation and contradiction analysis." />
+      <PageHeader
+        title="Dreams"
+        description="Asynchronous reflection, consolidation and contradiction analysis."
+      />
       <div className="grid gap-5 lg:grid-cols-3">
         {can('dream:run') ? (
           <div className="lg:col-span-1">
@@ -138,7 +143,9 @@ export function DreamsPage() {
             ) : list.isError ? (
               <ErrorState error={list.error} onRetry={() => void list.refetch()} />
             ) : list.items.length === 0 ? (
-              <EmptyState title="No dreams yet">Dreams are triggered on schedule, by thresholds or manually.</EmptyState>
+              <EmptyState title="No dreams yet">
+                Dreams are triggered on schedule, by thresholds or manually.
+              </EmptyState>
             ) : (
               <>
                 <Table data-testid="dream-list">
@@ -157,7 +164,10 @@ export function DreamsPage() {
                       return (
                         <TableRow key={d.id} data-testid="dream-row" data-id={d.id}>
                           <TableCell>
-                            <Link to={`/dreams/${d.id}`} className="font-medium capitalize hover:text-primary hover:underline">
+                            <Link
+                              to={`/dreams/${d.id}`}
+                              className="font-medium capitalize hover:text-primary hover:underline"
+                            >
                               {d.mode}
                             </Link>{' '}
                             <IdText id={d.id} className="text-muted-foreground" />

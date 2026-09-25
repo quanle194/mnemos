@@ -78,7 +78,7 @@ trap 'rm -f "$work"' EXIT
 cp "$TEMPLATE" "$work"
 
 gen() { openssl rand -hex 32; }
-for key in POSTGRES_PASSWORD REDIS_PASSWORD API_BOOTSTRAP_SECRET API_KEY_PEPPER; do
+for key in POSTGRES_PASSWORD REDIS_PASSWORD API_BOOTSTRAP_SECRET API_KEY_PEPPER MNEMOS_MCP_TOKEN; do
   env_set "$work" "$key" "$(gen)"
 done
 
@@ -104,13 +104,13 @@ else
   env_set "$work" PUBLIC_API_URL "$PUBLIC_URL/api"
 fi
 
-if grep -q "CHANGE_ME_GENERATED" "$work"; then
+if grep -qE "^[A-Z_]+=CHANGE_ME_GENERATED" "$work"; then
   die "internal error: unreplaced CHANGE_ME_GENERATED placeholders remain"
 fi
 
 if [[ $DRY_RUN -eq 1 ]]; then
   log "dry-run: would write $OUTPUT with:"
-  sed -E 's/^((POSTGRES_PASSWORD|REDIS_PASSWORD|API_BOOTSTRAP_SECRET|API_KEY_PEPPER)=).*/\1<generated>/' "$work" \
+  sed -E 's/^((POSTGRES_PASSWORD|REDIS_PASSWORD|API_BOOTSTRAP_SECRET|API_KEY_PEPPER|MNEMOS_MCP_TOKEN)=).*/\1<generated>/' "$work" \
     | grep -Ev '^[[:space:]]*(#|$)'
   exit 0
 fi
@@ -122,7 +122,7 @@ if [[ -e "$OUTPUT" ]]; then
 fi
 mkdir -p "$(dirname "$OUTPUT")"
 install -m 600 "$work" "$OUTPUT"
-ok "wrote $OUTPUT (mode 600) with generated POSTGRES_PASSWORD, REDIS_PASSWORD, API_BOOTSTRAP_SECRET, API_KEY_PEPPER"
+ok "wrote $OUTPUT (mode 600) with generated POSTGRES_PASSWORD, REDIS_PASSWORD, API_BOOTSTRAP_SECRET, API_KEY_PEPPER, MNEMOS_MCP_TOKEN"
 if [[ -z "$DOMAIN" ]]; then
   warn "HTTP-only mode (SITE_ADDRESS=:80). Set SITE_ADDRESS to a domain for automatic HTTPS (see docs/RUNBOOK.md)."
 fi

@@ -16,7 +16,15 @@ export function LoadingState({ rows = 3, label = 'Loading…' }: { rows?: number
   )
 }
 
-export function ErrorState({ error, onRetry, title }: { error: unknown; onRetry?: () => void; title?: string }) {
+export function ErrorState({
+  error,
+  onRetry,
+  title,
+}: {
+  error: unknown
+  onRetry?: () => void
+  title?: string
+}) {
   const notFound = error instanceof ApiError && error.status === 404
   const forbidden = error instanceof ApiError && error.status === 403
   const heading = title ?? (notFound ? 'Not found' : forbidden ? 'Not permitted' : 'Something went wrong')
@@ -39,7 +47,15 @@ export function ErrorState({ error, onRetry, title }: { error: unknown; onRetry?
   )
 }
 
-export function EmptyState({ title, children, icon }: { title: string; children?: ReactNode; icon?: ReactNode }) {
+export function EmptyState({
+  title,
+  children,
+  icon,
+}: {
+  title: string
+  children?: ReactNode
+  icon?: ReactNode
+}) {
   return (
     <div
       className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-10 text-center"

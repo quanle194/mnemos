@@ -6,7 +6,12 @@ import type { ApiKeyIn, NamedIn, UUID, WorkspaceIn } from '../types'
 
 export function useMe() {
   const { client, isAuthenticated } = useSession()
-  return useQuery({ queryKey: qk.me, queryFn: () => api.getMe(client), enabled: isAuthenticated, staleTime: 60_000 })
+  return useQuery({
+    queryKey: qk.me,
+    queryFn: () => api.getMe(client),
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+  })
 }
 
 export function useWorkspaces() {

@@ -17,7 +17,9 @@ export function Section({ title, description, count, actions, children, testId }
         <div>
           <CardTitle id={`${testId}-title`} className="text-base">
             {title}
-            {count !== undefined ? <span className="ml-2 text-sm font-normal text-muted-foreground">({count})</span> : null}
+            {count !== undefined ? (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">({count})</span>
+            ) : null}
           </CardTitle>
           {description ? <CardDescription>{description}</CardDescription> : null}
         </div>

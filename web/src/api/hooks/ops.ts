@@ -7,7 +7,11 @@ import { PAGE_SIZE, useCursorList } from './pagination'
 
 export function useStats(ws: UUID) {
   const client = useApiClient()
-  return useQuery({ queryKey: qk.stats(ws), queryFn: () => api.getStats(client, ws), refetchInterval: 30_000 })
+  return useQuery({
+    queryKey: qk.stats(ws),
+    queryFn: () => api.getStats(client, ws),
+    refetchInterval: 30_000,
+  })
 }
 
 export function useGraph(ws: UUID, includeInactive: boolean) {
@@ -65,5 +69,9 @@ export function useEvalRuns(ws: UUID | null) {
 
 export function useReadiness() {
   const client = useApiClient()
-  return useQuery({ queryKey: qk.readiness, queryFn: () => api.getReadiness(client), refetchInterval: 15_000 })
+  return useQuery({
+    queryKey: qk.readiness,
+    queryFn: () => api.getReadiness(client),
+    refetchInterval: 15_000,
+  })
 }

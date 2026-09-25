@@ -107,7 +107,12 @@ function GraphCanvas({ graph, mode }: { graph: Graph; mode: ColorMode }) {
         <Button variant="outline" size="icon" aria-label="Zoom out" onClick={() => zoom(0.8)}>
           <Minus />
         </Button>
-        <Button variant="outline" size="icon" aria-label="Reset view" onClick={() => setView({ x: 0, y: 0, scale: 1 })}>
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Reset view"
+          onClick={() => setView({ x: 0, y: 0, scale: 1 })}
+        >
           <RotateCcw />
         </Button>
       </div>
@@ -124,7 +129,15 @@ function GraphCanvas({ graph, mode }: { graph: Graph; mode: ColorMode }) {
         onPointerLeave={onPointerUp}
       >
         <defs>
-          <marker id="graph-arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <marker
+            id="graph-arrow"
+            viewBox="0 0 10 10"
+            refX="10"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
             <path d="M0,0 L10,5 L0,10 z" style={{ fill: 'var(--muted-foreground)' }} />
           </marker>
         </defs>
@@ -157,7 +170,12 @@ function GraphCanvas({ graph, mode }: { graph: Graph; mode: ColorMode }) {
                       y={(a.y + b.y) / 2 - 4}
                       textAnchor="middle"
                       fontSize={10}
-                      style={{ fill: 'var(--muted-foreground)', paintOrder: 'stroke', stroke: 'var(--card)', strokeWidth: 3 }}
+                      style={{
+                        fill: 'var(--muted-foreground)',
+                        paintOrder: 'stroke',
+                        stroke: 'var(--card)',
+                        strokeWidth: 3,
+                      }}
                     >
                       {e.relation.replace('_', ' ')}
                     </text>
@@ -198,7 +216,9 @@ function GraphCanvas({ graph, mode }: { graph: Graph; mode: ColorMode }) {
                   }}
                 >
                   <circle r={r + 6} style={{ fill: 'transparent', stroke: 'transparent', strokeWidth: 3 }} />
-                  {n.layer === 4 ? <circle r={r + 3} style={{ fill: 'none', stroke: color, strokeWidth: 1.5 }} /> : null}
+                  {n.layer === 4 ? (
+                    <circle r={r + 3} style={{ fill: 'none', stroke: color, strokeWidth: 1.5 }} />
+                  ) : null}
                   <circle
                     r={r}
                     style={{
@@ -212,7 +232,12 @@ function GraphCanvas({ graph, mode }: { graph: Graph; mode: ColorMode }) {
                       x={r + 4}
                       y={4}
                       fontSize={11}
-                      style={{ fill: 'var(--foreground)', paintOrder: 'stroke', stroke: 'var(--card)', strokeWidth: 3 }}
+                      style={{
+                        fill: 'var(--foreground)',
+                        paintOrder: 'stroke',
+                        stroke: 'var(--card)',
+                        strokeWidth: 3,
+                      }}
                     >
                       {truncate(n.title, 28)}
                     </text>
@@ -231,8 +256,9 @@ function GraphCanvas({ graph, mode }: { graph: Graph; mode: ColorMode }) {
         >
           <div className="font-medium text-foreground">{hovered.title}</div>
           <div className="text-muted-foreground">
-            {hovered.type} · {hovered.status} · L{hovered.layer} · confidence {formatScore(hovered.confidence)} · utility{' '}
-            {formatScore(hovered.utility)} · {neighbors.get(hovered.id)?.size ?? 0} relation(s)
+            {hovered.type} · {hovered.status} · L{hovered.layer} · confidence{' '}
+            {formatScore(hovered.confidence)} · utility {formatScore(hovered.utility)} ·{' '}
+            {neighbors.get(hovered.id)?.size ?? 0} relation(s)
           </div>
         </div>
       ) : null}
@@ -243,7 +269,10 @@ function GraphCanvas({ graph, mode }: { graph: Graph; mode: ColorMode }) {
 function Legend({ mode }: { mode: ColorMode }) {
   const entries = mode === 'status' ? STATUS_LEGEND : TYPE_LEGEND
   return (
-    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" data-testid="graph-legend">
+    <ul
+      className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground"
+      data-testid="graph-legend"
+    >
       {entries.map((e) => (
         <li key={e.key} className="flex items-center gap-1.5">
           <svg width="12" height="12" aria-hidden>
@@ -251,7 +280,11 @@ function Legend({ mode }: { mode: ColorMode }) {
               cx="6"
               cy="6"
               r="4.5"
-              style={{ fill: e.hollow ? 'transparent' : e.color, stroke: e.color, strokeWidth: e.hollow ? 2 : 0 }}
+              style={{
+                fill: e.hollow ? 'transparent' : e.color,
+                stroke: e.color,
+                strokeWidth: e.hollow ? 2 : 0,
+              }}
             />
           </svg>
           {e.label}
@@ -300,7 +333,8 @@ function NodeTable({ nodes, degree }: { nodes: GraphNode[]; degree: Map<string, 
                 </Link>
               </TableCell>
               <TableCell className="capitalize">
-                {n.type} <span className="text-xs text-muted-foreground">({humanize(typeFamily(n.type))})</span>
+                {n.type}{' '}
+                <span className="text-xs text-muted-foreground">({humanize(typeFamily(n.type))})</span>
               </TableCell>
               <TableCell>
                 <StatusBadge kind="memory" value={n.status} />

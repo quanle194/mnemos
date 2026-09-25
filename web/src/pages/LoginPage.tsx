@@ -85,7 +85,8 @@ export function LoginPage() {
         )}
       </Card>
       <p className="max-w-md text-center text-xs text-muted-foreground">
-        The key is stored in this browser&apos;s localStorage and sent as a Bearer token to the Mnemos API only.
+        The key is stored in this browser&apos;s localStorage and sent as a Bearer token to the Mnemos API
+        only.
       </p>
     </div>
   )
@@ -119,7 +120,9 @@ function KeyStep({ onValidated }: { onValidated: (p: Pending) => void }) {
         <CardTitle className="flex items-center gap-2">
           <KeyRound className="size-4" aria-hidden /> Connect to Mnemos
         </CardTitle>
-        <CardDescription>Paste an API key. It is validated against GET /v1/me before being saved.</CardDescription>
+        <CardDescription>
+          Paste an API key. It is validated against GET /v1/me before being saved.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate data-testid="login-form">
@@ -201,8 +204,8 @@ function WorkspaceStep({ workspaces, me, from, onBack, onContinue, initialId }: 
         {workspaces.length === 0 ? (
           <Alert variant="warning" data-testid="login-no-workspaces">
             <AlertDescription>
-              This key cannot access any workspace. Ask an admin for a key with workspace access, or create one with
-              the CLI (<code className="font-mono">mnemos admin bootstrap</code>).
+              This key cannot access any workspace. Ask an admin for a key with workspace access, or create
+              one with the CLI (<code className="font-mono">mnemos admin bootstrap</code>).
             </AlertDescription>
           </Alert>
         ) : (

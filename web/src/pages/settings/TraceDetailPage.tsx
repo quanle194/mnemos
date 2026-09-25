@@ -38,7 +38,9 @@ export function TraceDetailPage() {
   const selected = asArray<SelectedItem>(t.selected_json.items)
   const candidates = asArray<CandidateItem>(t.candidates_json.items)
   const excluded = asArray<unknown>(t.candidates_json.excluded)
-  const scoreKeys = Array.from(new Set(candidates.flatMap((c) => Object.keys(c.scores ?? {})))).filter((k) => k !== 'total')
+  const scoreKeys = Array.from(new Set(candidates.flatMap((c) => Object.keys(c.scores ?? {})))).filter(
+    (k) => k !== 'total',
+  )
   const candidateMeta = Object.fromEntries(
     Object.entries(t.candidates_json).filter(([k]) => k !== 'items' && k !== 'excluded'),
   )
@@ -97,12 +99,17 @@ export function TraceDetailPage() {
                   <TableRow key={s.id} data-testid="trace-selected-row">
                     <TableCell className="tabular text-right">{s.rank ?? '—'}</TableCell>
                     <TableCell>
-                      <Link to={`/memories/${s.id}`} className="font-mono text-xs text-primary hover:underline">
+                      <Link
+                        to={`/memories/${s.id}`}
+                        className="font-mono text-xs text-primary hover:underline"
+                      >
                         {s.id.slice(0, 8)}
                       </Link>
                     </TableCell>
                     <TableCell className="tabular text-right">{formatScore(s.score ?? null, 3)}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{(s.reasons ?? []).join(' · ')}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {(s.reasons ?? []).join(' · ')}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -137,7 +144,10 @@ export function TraceDetailPage() {
                 {candidates.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell>
-                      <Link to={`/memories/${c.id}`} className="font-mono text-xs text-primary hover:underline">
+                      <Link
+                        to={`/memories/${c.id}`}
+                        className="font-mono text-xs text-primary hover:underline"
+                      >
                         {c.id.slice(0, 8)}
                       </Link>
                     </TableCell>
@@ -147,7 +157,9 @@ export function TraceDetailPage() {
                         {formatScore(c.scores?.[k] ?? null)}
                       </TableCell>
                     ))}
-                    <TableCell className="tabular text-right font-medium">{formatScore(c.scores?.total ?? null, 3)}</TableCell>
+                    <TableCell className="tabular text-right font-medium">
+                      {formatScore(c.scores?.total ?? null, 3)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -311,7 +311,9 @@ export function MemoriesPage() {
           <SemanticSearch />
         </TabsContent>
       </Tabs>
-      {can('memory:propose') ? <ProposeMemoryDialog open={proposeOpen} onOpenChange={setProposeOpen} /> : null}
+      {can('memory:propose') ? (
+        <ProposeMemoryDialog open={proposeOpen} onOpenChange={setProposeOpen} />
+      ) : null}
     </>
   )
 }

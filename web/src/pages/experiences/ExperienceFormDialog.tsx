@@ -23,7 +23,12 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { describedBy } from '@/lib/a11y'
 import { humanize } from '@/lib/format'
-import { EXPERIENCE_DEFAULTS, experienceSchema, toExperienceIn, type ExperienceForm } from './experience-schema'
+import {
+  EXPERIENCE_DEFAULTS,
+  experienceSchema,
+  toExperienceIn,
+  type ExperienceForm,
+} from './experience-schema'
 
 export function ExperienceFormFields({ onDone }: { onDone?: () => void }) {
   const ws = useWorkspaceId()
@@ -31,7 +36,10 @@ export function ExperienceFormFields({ onDone }: { onDone?: () => void }) {
   const create = useCreateExperience()
   const projects = useProjects(ws)
   const agents = useAgents(ws)
-  const form = useForm<ExperienceForm>({ resolver: zodResolver(experienceSchema), defaultValues: EXPERIENCE_DEFAULTS })
+  const form = useForm<ExperienceForm>({
+    resolver: zodResolver(experienceSchema),
+    defaultValues: EXPERIENCE_DEFAULTS,
+  })
   const { errors, isSubmitting } = form.formState
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -46,8 +54,19 @@ export function ExperienceFormFields({ onDone }: { onDone?: () => void }) {
     }
   })
 
-  const text = (name: 'task' | 'observation' | 'action' | 'result', label: string, rows: number, hint?: string) => (
-    <Field id={`exp-${name}`} label={label} error={errors[name]?.message} hint={hint} className="sm:col-span-2">
+  const text = (
+    name: 'task' | 'observation' | 'action' | 'result',
+    label: string,
+    rows: number,
+    hint?: string,
+  ) => (
+    <Field
+      id={`exp-${name}`}
+      label={label}
+      error={errors[name]?.message}
+      hint={hint}
+      className="sm:col-span-2"
+    >
       <Textarea
         id={`exp-${name}`}
         rows={rows}
@@ -74,7 +93,12 @@ export function ExperienceFormFields({ onDone }: { onDone?: () => void }) {
           ))}
         </NativeSelect>
       </Field>
-      <Field id="exp-source" label="Source" error={errors.source?.message} hint="External sources get lower trust">
+      <Field
+        id="exp-source"
+        label="Source"
+        error={errors.source?.message}
+        hint="External sources get lower trust"
+      >
         <NativeSelect id="exp-source" data-testid="experience-source" {...form.register('source')}>
           {EXPERIENCE_SOURCES.map((s) => (
             <option key={s} value={s}>
@@ -123,7 +147,12 @@ export function ExperienceFormFields({ onDone }: { onDone?: () => void }) {
         </datalist>
       </Field>
       <Field id="exp-agent" label="Agent name" error={errors.agent_name?.message} hint="Created if new">
-        <Input id="exp-agent" list="exp-agent-options" data-testid="experience-agent-name" {...form.register('agent_name')} />
+        <Input
+          id="exp-agent"
+          list="exp-agent-options"
+          data-testid="experience-agent-name"
+          {...form.register('agent_name')}
+        />
         <datalist id="exp-agent-options">
           {(agents.data ?? []).map((a) => (
             <option key={a.id} value={a.name} />
@@ -147,7 +176,13 @@ export function ExperienceFormFields({ onDone }: { onDone?: () => void }) {
   )
 }
 
-export function ExperienceFormDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+export function ExperienceFormDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+}) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">

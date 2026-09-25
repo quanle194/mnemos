@@ -2,7 +2,13 @@ import { Check, Copy, KeyRound, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { errorMessage } from '@/api/client'
-import { useApiKeys, useCreateApiKey, useCreateWorkspace, useRevokeApiKey, useWorkspaces } from '@/api/hooks/tenancy'
+import {
+  useApiKeys,
+  useCreateApiKey,
+  useCreateWorkspace,
+  useRevokeApiKey,
+  useWorkspaces,
+} from '@/api/hooks/tenancy'
 import { ROLES, type ApiKey, type ApiKeyCreated, type Role } from '@/api/types'
 import { usePermissions } from '@/auth/permissions'
 import { useSession } from '@/auth/session-context'
@@ -48,7 +54,9 @@ function WorkspacesCard() {
     <Card>
       <CardHeader className="flex-col">
         <CardTitle className="text-base">Workspaces</CardTitle>
-        <CardDescription>Tenant partitions inside your organization. The active one scopes every screen.</CardDescription>
+        <CardDescription>
+          Tenant partitions inside your organization. The active one scopes every screen.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {canCreate ? (
@@ -214,7 +222,9 @@ function ApiKeysCard() {
         <CardTitle className="flex items-center gap-2 text-base">
           <KeyRound className="size-4" aria-hidden /> API keys
         </CardTitle>
-        <CardDescription>Keys carry one role and optionally a workspace allow-list. Raw keys are shown once.</CardDescription>
+        <CardDescription>
+          Keys carry one role and optionally a workspace allow-list. Raw keys are shown once.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <form
@@ -318,7 +328,12 @@ function ApiKeysCard() {
             </TableHeader>
             <TableBody>
               {keys.data.map((k) => (
-                <TableRow key={k.id} data-testid="api-key-row" data-id={k.id} data-revoked={Boolean(k.revoked_at)}>
+                <TableRow
+                  key={k.id}
+                  data-testid="api-key-row"
+                  data-id={k.id}
+                  data-revoked={Boolean(k.revoked_at)}
+                >
                   <TableCell className="font-medium">{k.name}</TableCell>
                   <TableCell className="font-mono text-xs">{k.prefix}</TableCell>
                   <TableCell>
@@ -333,7 +348,11 @@ function ApiKeysCard() {
                     <TimeAgo iso={k.last_used_at} />
                   </TableCell>
                   <TableCell>
-                    {k.revoked_at ? <Badge variant="destructive">Revoked</Badge> : <Badge variant="success">Active</Badge>}
+                    {k.revoked_at ? (
+                      <Badge variant="destructive">Revoked</Badge>
+                    ) : (
+                      <Badge variant="success">Active</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     {!k.revoked_at ? (

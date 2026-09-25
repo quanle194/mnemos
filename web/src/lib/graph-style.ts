@@ -45,7 +45,10 @@ export function typeFamily(type: string): string {
 
 const RETRIEVABLE = new Set<string>(['active', 'validated', 'disputed'])
 
-export function nodeStyle(mode: ColorMode, node: { status: MemoryStatus | string; type: MemoryType | string }) {
+export function nodeStyle(
+  mode: ColorMode,
+  node: { status: MemoryStatus | string; type: MemoryType | string },
+) {
   const hollow = !RETRIEVABLE.has(node.status)
   if (mode === 'type') {
     const entry = TYPE_LEGEND.find((e) => e.key === typeFamily(node.type)) ?? TYPE_LEGEND[0]!

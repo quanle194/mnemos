@@ -9,7 +9,13 @@ export function useCursorList<T>(
   fetchPage: (cursor: string | undefined) => Promise<Page<T>>,
   options: { enabled?: boolean; refetchInterval?: number | false } = {},
 ) {
-  const query = useInfiniteQuery<Page<T>, Error, InfiniteData<Page<T>, string | undefined>, QueryKey, string | undefined>({
+  const query = useInfiniteQuery<
+    Page<T>,
+    Error,
+    InfiniteData<Page<T>, string | undefined>,
+    QueryKey,
+    string | undefined
+  >({
     queryKey,
     queryFn: ({ pageParam }) => fetchPage(pageParam),
     initialPageParam: undefined,

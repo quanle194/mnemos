@@ -28,7 +28,9 @@ export function EpisodeDetailPage() {
       </div>
       <div>
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Episode</h1>
-        <p className="mt-1 text-sm whitespace-pre-wrap text-muted-foreground">{ep.summary || '(no summary)'}</p>
+        <p className="mt-1 text-sm whitespace-pre-wrap text-muted-foreground">
+          {ep.summary || '(no summary)'}
+        </p>
       </div>
       <Card>
         <CardContent>
@@ -64,7 +66,10 @@ export function EpisodeDetailPage() {
               {ep.experiences.map((e) => (
                 <TableRow key={e.id} data-testid="episode-experience-row">
                   <TableCell>
-                    <Link to={`/experiences/${e.id}`} className="font-medium hover:text-primary hover:underline">
+                    <Link
+                      to={`/experiences/${e.id}`}
+                      className="font-medium hover:text-primary hover:underline"
+                    >
                       {truncate(e.task, 120)}
                     </Link>
                   </TableCell>

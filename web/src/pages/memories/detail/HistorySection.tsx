@@ -41,8 +41,11 @@ export function HistorySection({ memoryId, currentVersion }: { memoryId: string;
                     </span>
                   </div>
                   <div className="mt-0.5 text-xs text-muted-foreground">
-                    by <span data-testid="history-actor">{v.actor_type}:{v.actor_id ?? '—'}</span> ·{' '}
-                    <TimeAgo iso={v.created_at} />
+                    by{' '}
+                    <span data-testid="history-actor">
+                      {v.actor_type}:{v.actor_id ?? '—'}
+                    </span>{' '}
+                    · <TimeAgo iso={v.created_at} />
                   </div>
                   {prev ? (
                     changes.length > 0 ? (
@@ -51,7 +54,9 @@ export function HistorySection({ memoryId, currentVersion }: { memoryId: string;
                           <li key={c.key} className="grid gap-1 sm:grid-cols-[8rem_1fr]">
                             <span className="font-mono text-muted-foreground">{c.key}</span>
                             <span className="break-words">
-                              <del className="text-destructive/80 decoration-destructive/60">{displayValue(c.before)}</del>
+                              <del className="text-destructive/80 decoration-destructive/60">
+                                {displayValue(c.before)}
+                              </del>
                               <span className="mx-1 text-muted-foreground" aria-label="changed to">
                                 →
                               </span>

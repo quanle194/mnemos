@@ -66,7 +66,9 @@ function IdentityCard() {
     <Card data-testid="settings-identity">
       <CardHeader className="flex-col">
         <CardTitle className="text-base">Identity</CardTitle>
-        <CardDescription>From GET /v1/me. Actions you lack permission for are hidden in the UI.</CardDescription>
+        <CardDescription>
+          From GET /v1/me. Actions you lack permission for are hidden in the UI.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <KeyValueGrid
@@ -106,7 +108,9 @@ function ReadinessCard() {
       <CardHeader>
         <div>
           <CardTitle className="text-base">Backend readiness</CardTitle>
-          <CardDescription>GET /health/ready — database, pgvector, migrations, Redis, workers and providers.</CardDescription>
+          <CardDescription>
+            GET /health/ready — database, pgvector, migrations, Redis, workers and providers.
+          </CardDescription>
         </div>
         <Button variant="outline" size="sm" onClick={() => void q.refetch()} disabled={q.isFetching}>
           <RefreshCw className={q.isFetching ? 'animate-spin' : undefined} /> Refresh
@@ -120,7 +124,10 @@ function ReadinessCard() {
         ) : (
           <>
             <div className="flex items-center gap-2">
-              <Badge variant={q.data.status === 'ok' ? 'success' : 'destructive'} data-testid="settings-readiness-status">
+              <Badge
+                variant={q.data.status === 'ok' ? 'success' : 'destructive'}
+                data-testid="settings-readiness-status"
+              >
                 {q.data.status}
               </Badge>
               <span className="text-xs text-muted-foreground">auto-refreshes every 15s</span>
@@ -129,18 +136,32 @@ function ReadinessCard() {
               items={[
                 {
                   label: 'Database',
-                  value: checks?.database ? (checks.database.ok ? 'ok' : `down (${checks.database.error ?? 'error'})`) : '—',
+                  value: checks?.database
+                    ? checks.database.ok
+                      ? 'ok'
+                      : `down (${checks.database.error ?? 'error'})`
+                    : '—',
                 },
                 { label: 'pgvector', value: checks?.database?.pgvector ?? '—' },
-                { label: 'Migration', value: <code className="font-mono text-xs">{checks?.database?.migration ?? '—'}</code> },
+                {
+                  label: 'Migration',
+                  value: <code className="font-mono text-xs">{checks?.database?.migration ?? '—'}</code>,
+                },
                 { label: 'Redis', value: checks?.redis ? (checks.redis.ok ? 'ok' : 'down') : '—' },
-                { label: 'LLM provider', value: checks?.providers?.llm ?? '—', testId: 'settings-provider-llm' },
+                {
+                  label: 'LLM provider',
+                  value: checks?.providers?.llm ?? '—',
+                  testId: 'settings-provider-llm',
+                },
                 {
                   label: 'Embedding provider',
                   value: checks?.providers?.embedding ?? '—',
                   testId: 'settings-provider-embedding',
                 },
-                { label: 'Embedding dims', value: formatNumber(checks?.providers?.embedding_dimensions ?? null) },
+                {
+                  label: 'Embedding dims',
+                  value: formatNumber(checks?.providers?.embedding_dimensions ?? null),
+                },
                 {
                   label: 'Workers',
                   value: Array.isArray(checks?.workers)
@@ -164,7 +185,9 @@ function ReadinessCard() {
               </div>
             ) : null}
             <details>
-              <summary className="cursor-pointer text-xs text-muted-foreground">Raw readiness payload</summary>
+              <summary className="cursor-pointer text-xs text-muted-foreground">
+                Raw readiness payload
+              </summary>
               <JsonView value={q.data} className="mt-2" />
             </details>
           </>
@@ -185,7 +208,12 @@ function JobsTab() {
       <CardContent className="flex flex-col gap-4">
         <div className="flex max-w-56 flex-col gap-1.5">
           <Label htmlFor="jobs-status">Status</Label>
-          <NativeSelect id="jobs-status" value={status} onChange={(e) => setStatus(e.target.value)} data-testid="jobs-status">
+          <NativeSelect
+            id="jobs-status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            data-testid="jobs-status"
+          >
             <option value="">Any status</option>
             {JOB_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -219,7 +247,8 @@ function JobsTab() {
                 {list.items.map((j) => (
                   <TableRow key={j.id} data-testid="job-row" data-id={j.id} data-status={j.status}>
                     <TableCell>
-                      <span className="font-mono text-xs">{j.kind}</span> <IdText id={j.id} className="text-muted-foreground" />
+                      <span className="font-mono text-xs">{j.kind}</span>{' '}
+                      <IdText id={j.id} className="text-muted-foreground" />
                     </TableCell>
                     <TableCell>
                       <StatusBadge kind="job" value={j.status} />
@@ -227,7 +256,10 @@ function JobsTab() {
                     <TableCell className="tabular text-right">
                       {j.attempts}/{j.max_attempts}
                     </TableCell>
-                    <TableCell className="max-w-72 truncate text-xs text-destructive" title={j.last_error ?? ''}>
+                    <TableCell
+                      className="max-w-72 truncate text-xs text-destructive"
+                      title={j.last_error ?? ''}
+                    >
                       {j.last_error ? truncate(j.last_error, 100) : ''}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-muted-foreground">
@@ -274,7 +306,9 @@ function TracesTab() {
         ) : list.isError ? (
           <ErrorState error={list.error} onRetry={() => void list.refetch()} />
         ) : list.items.length === 0 ? (
-          <EmptyState title="No retrieval traces yet">Every context/search request records a trace.</EmptyState>
+          <EmptyState title="No retrieval traces yet">
+            Every context/search request records a trace.
+          </EmptyState>
         ) : (
           <>
             <Table data-testid="trace-list">
@@ -294,7 +328,10 @@ function TracesTab() {
                   return (
                     <TableRow key={t.id} data-testid="trace-row" data-id={t.id}>
                       <TableCell className="max-w-md">
-                        <Link to={`/traces/${t.id}`} className="font-medium hover:text-primary hover:underline">
+                        <Link
+                          to={`/traces/${t.id}`}
+                          className="font-medium hover:text-primary hover:underline"
+                        >
                           {truncate(t.query, 100)}
                         </Link>
                       </TableCell>
@@ -328,8 +365,14 @@ export function SettingsPage() {
   const tab = (TABS as readonly string[]).includes(raw ?? '') ? (raw as string) : 'general'
   return (
     <>
-      <PageHeader title="Settings & operations" description="Connection, identity, backend health, jobs and retrieval traces." />
-      <Tabs value={tab} onValueChange={(v) => setParams(v === 'general' ? {} : { tab: v }, { replace: true })}>
+      <PageHeader
+        title="Settings & operations"
+        description="Connection, identity, backend health, jobs and retrieval traces."
+      />
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setParams(v === 'general' ? {} : { tab: v }, { replace: true })}
+      >
         <TabsList>
           <TabsTrigger value="general" data-testid="settings-tab-general">
             General

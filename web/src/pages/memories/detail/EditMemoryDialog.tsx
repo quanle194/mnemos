@@ -20,7 +20,12 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { buildPatch, editMemorySchema, memoryToEditForm as fromMemory, type EditMemoryForm } from '../memory-schemas'
+import {
+  buildPatch,
+  editMemorySchema,
+  memoryToEditForm as fromMemory,
+  type EditMemoryForm,
+} from '../memory-schemas'
 
 interface Conflict {
   attempted: number
@@ -39,7 +44,10 @@ export function EditMemoryDialog({ memory, onClose }: Props) {
   const [base, setBase] = useState(() => ({ version: memory.version, values: fromMemory(memory) }))
   const [conflict, setConflict] = useState<Conflict | null>(null)
   const [reloading, setReloading] = useState(false)
-  const form = useForm<EditMemoryForm>({ resolver: zodResolver(editMemorySchema), defaultValues: base.values })
+  const form = useForm<EditMemoryForm>({
+    resolver: zodResolver(editMemorySchema),
+    defaultValues: base.values,
+  })
   const { errors, isSubmitting } = form.formState
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -83,8 +91,8 @@ export function EditMemoryDialog({ memory, onClose }: Props) {
         <DialogHeader>
           <DialogTitle>Edit memory</DialogTitle>
           <DialogDescription>
-            Editing version <strong data-testid="memory-edit-base-version">{base.version}</strong>. Saving creates a new
-            version (If-Match: &quot;{base.version}&quot;); history is preserved.
+            Editing version <strong data-testid="memory-edit-base-version">{base.version}</strong>. Saving
+            creates a new version (If-Match: &quot;{base.version}&quot;); history is preserved.
           </DialogDescription>
         </DialogHeader>
         {conflict ? (
@@ -116,7 +124,12 @@ export function EditMemoryDialog({ memory, onClose }: Props) {
             </AlertDescription>
           </Alert>
         ) : null}
-        <form className="grid gap-4 sm:grid-cols-2" onSubmit={onSubmit} noValidate data-testid="memory-edit-form">
+        <form
+          className="grid gap-4 sm:grid-cols-2"
+          onSubmit={onSubmit}
+          noValidate
+          data-testid="memory-edit-form"
+        >
           <Field id="me-title" label="Title" error={errors.title?.message} className="sm:col-span-2">
             <Input
               id="me-title"
@@ -194,7 +207,11 @@ export function EditMemoryDialog({ memory, onClose }: Props) {
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || Boolean(conflict)} data-testid="memory-edit-submit">
+            <Button
+              type="submit"
+              disabled={isSubmitting || Boolean(conflict)}
+              data-testid="memory-edit-submit"
+            >
               {isSubmitting ? 'Saving…' : 'Save'}
             </Button>
           </DialogFooter>

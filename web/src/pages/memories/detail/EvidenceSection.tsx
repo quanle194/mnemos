@@ -48,7 +48,13 @@ function SourceSummary({ ev }: { ev: Evidence }) {
     return (
       <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="evidence-source">
         <Link to={`/memories/${ev.source_id}`} className="font-medium text-primary hover:underline">
-          {s?.title ? str(s.title) : <>Memory <IdText id={ev.source_id} /></>}
+          {s?.title ? (
+            str(s.title)
+          ) : (
+            <>
+              Memory <IdText id={ev.source_id} />
+            </>
+          )}
         </Link>
         {s?.status ? <StatusBadge kind="memory" value={str(s.status)} /> : null}
         {s?.type ? <Badge variant="outline">{str(s.type)}</Badge> : null}
@@ -91,7 +97,12 @@ export function EvidenceSection({ memoryId }: { memoryId: string }) {
       ) : (
         <ul className="flex flex-col divide-y">
           {q.data.map((ev) => (
-            <li key={ev.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0" data-testid="evidence-row" data-id={ev.id}>
+            <li
+              key={ev.id}
+              className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0"
+              data-testid="evidence-row"
+              data-id={ev.id}
+            >
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <Badge variant="info">{humanize(ev.source_type)}</Badge>
                 <Badge variant="outline">{ev.relation}</Badge>
@@ -102,7 +113,10 @@ export function EvidenceSection({ memoryId }: { memoryId: string }) {
               </div>
               <SourceSummary ev={ev} />
               {ev.excerpt ? (
-                <blockquote className="border-l-2 pl-3 text-sm text-muted-foreground italic" data-testid="evidence-excerpt">
+                <blockquote
+                  className="border-l-2 pl-3 text-sm text-muted-foreground italic"
+                  data-testid="evidence-excerpt"
+                >
                   {truncate(ev.excerpt, 500)}
                 </blockquote>
               ) : null}

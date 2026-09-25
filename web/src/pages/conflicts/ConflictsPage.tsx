@@ -29,7 +29,10 @@ export function ConflictsPage() {
         title="Conflicts"
         description="Contradictions between candidate and existing knowledge — never silently overwritten."
       />
-      <Tabs value={filter} onValueChange={(v) => setParams(v === 'open' ? {} : { status: v }, { replace: true })}>
+      <Tabs
+        value={filter}
+        onValueChange={(v) => setParams(v === 'open' ? {} : { status: v }, { replace: true })}
+      >
         <TabsList>
           <TabsTrigger value="open" data-testid="conflicts-tab-open">
             Open

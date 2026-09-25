@@ -81,7 +81,12 @@ export type JobStatus = (typeof JOB_STATUSES)[number]
 export const CONFLICT_STATUSES = ['open', 'resolved'] as const
 export type ConflictStatus = (typeof CONFLICT_STATUSES)[number]
 
-export const CONFLICT_RESOLUTIONS = ['keep_existing', 'accept_candidate', 'keep_both', 'archive_both'] as const
+export const CONFLICT_RESOLUTIONS = [
+  'keep_existing',
+  'accept_candidate',
+  'keep_both',
+  'archive_both',
+] as const
 export type ConflictResolution = (typeof CONFLICT_RESOLUTIONS)[number]
 
 export const ROLES = ['admin', 'maintainer', 'agent', 'viewer'] as const

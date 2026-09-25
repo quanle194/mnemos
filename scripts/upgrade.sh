@@ -89,8 +89,11 @@ if [[ -z "$TO" ]]; then
 fi
 [[ "$TO" != "$CURRENT" ]] || warn "target $TO is already the recorded current version (re-applying it)"
 
-API_IMAGE=$(app_image "$TO")
-WEB_IMAGE="$(env_get MNEMOS_IMAGE_PREFIX mnemos)/web:$TO"
+# Resolve image names exactly as compose will (honours MNEMOS_IMAGE_PREFIX and any compose overrides).
+CONFIG_JSON=$(MNEMOS_VERSION="$TO" compose config --format json)
+API_IMAGE=$(json_get .services.api.image <<<"$CONFIG_JSON")
+WEB_IMAGE=$(json_get .services.web.image <<<"$CONFIG_JSON")
+[[ -n "$API_IMAGE" && -n "$WEB_IMAGE" ]] || die "could not resolve api/web image names from the compose configuration"
 banner "rollback $CURRENT -> $TO"
 for img in "$API_IMAGE" "$WEB_IMAGE"; do
   if ! docker image inspect "$img" >/dev/null 2>&1; then

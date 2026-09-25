@@ -53,7 +53,10 @@ function headline(run: EvalRun): string {
   return metrics
     .filter((m) => typeof m.value === 'number')
     .slice(0, 3)
-    .map((m) => `${humanize(m.key.split('.').pop() ?? m.key)}: ${formatMetricValue(m.value)}${m.kind === 'estimated' ? ' (est.)' : ''}`)
+    .map(
+      (m) =>
+        `${humanize(m.key.split('.').pop() ?? m.key)}: ${formatMetricValue(m.value)}${m.kind === 'estimated' ? ' (est.)' : ''}`,
+    )
     .join(' · ')
 }
 
@@ -129,11 +132,19 @@ export function EvalsPage() {
                           </TableCell>
                           <TableCell className="font-medium">{run.name}</TableCell>
                           <TableCell>
-                            <Badge variant={run.status === 'completed' || run.status === 'succeeded' ? 'success' : 'outline'}>
+                            <Badge
+                              variant={
+                                run.status === 'completed' || run.status === 'succeeded'
+                                  ? 'success'
+                                  : 'outline'
+                              }
+                            >
                               {run.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="max-w-96 text-xs text-muted-foreground">{headline(run) || '—'}</TableCell>
+                          <TableCell className="max-w-96 text-xs text-muted-foreground">
+                            {headline(run) || '—'}
+                          </TableCell>
                           <TableCell className="whitespace-nowrap text-muted-foreground">
                             <TimeAgo iso={run.created_at} />
                           </TableCell>
@@ -148,7 +159,11 @@ export function EvalsPage() {
                                 </div>
                                 <div>
                                   <h3 className="mb-2 text-sm font-medium">Full result</h3>
-                                  <JsonView value={run.result_json} maxHeight="max-h-96" data-testid="eval-result-json" />
+                                  <JsonView
+                                    value={run.result_json}
+                                    maxHeight="max-h-96"
+                                    data-testid="eval-result-json"
+                                  />
                                 </div>
                               </div>
                             </TableCell>

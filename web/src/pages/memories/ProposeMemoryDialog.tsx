@@ -40,7 +40,13 @@ const DEFAULTS: ProposeMemoryForm = {
   valid_until: '',
 }
 
-export function ProposeMemoryDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+export function ProposeMemoryDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+}) {
   const ws = useWorkspaceId()
   const navigate = useNavigate()
   const { can } = usePermissions()
@@ -48,7 +54,10 @@ export function ProposeMemoryDialog({ open, onOpenChange }: { open: boolean; onO
   const create = useCreateMemory()
   const projects = useProjects(open ? ws : null)
   const agents = useAgents(open ? ws : null)
-  const form = useForm<ProposeMemoryForm>({ resolver: zodResolver(proposeMemorySchema), defaultValues: DEFAULTS })
+  const form = useForm<ProposeMemoryForm>({
+    resolver: zodResolver(proposeMemorySchema),
+    defaultValues: DEFAULTS,
+  })
   const { errors, isSubmitting } = form.formState
   const scope = form.watch('scope_type')
 
@@ -76,11 +85,16 @@ export function ProposeMemoryDialog({ open, onOpenChange }: { open: boolean; onO
         <DialogHeader>
           <DialogTitle>Propose memory</DialogTitle>
           <DialogDescription>
-            New memories start as <strong>candidates</strong> and go through validation. Only reviewers can create
-            active, L4 or organization-scoped memories.
+            New memories start as <strong>candidates</strong> and go through validation. Only reviewers can
+            create active, L4 or organization-scoped memories.
           </DialogDescription>
         </DialogHeader>
-        <form className="grid gap-4 sm:grid-cols-2" onSubmit={onSubmit} noValidate data-testid="propose-memory-form">
+        <form
+          className="grid gap-4 sm:grid-cols-2"
+          onSubmit={onSubmit}
+          noValidate
+          data-testid="propose-memory-form"
+        >
           <Field id="pm-title" label="Title" error={errors.title?.message} className="sm:col-span-2">
             <Input
               id="pm-title"

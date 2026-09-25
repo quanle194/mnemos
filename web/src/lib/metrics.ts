@@ -12,7 +12,8 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 function kindFromKey(key: string): MetricKind | null {
   const k = key.toLowerCase()
-  if (/(^|[_\s.-])(estimated?|estimates|est)([_\s.-]|$)/.test(k) || k.startsWith('estimated')) return 'estimated'
+  if (/(^|[_\s.-])(estimated?|estimates|est)([_\s.-]|$)/.test(k) || k.startsWith('estimated'))
+    return 'estimated'
   if (/(^|[_\s.-])measured([_\s.-]|$)/.test(k)) return 'measured'
   return null
 }
@@ -33,7 +34,11 @@ export function classifyMetrics(summary: Record<string, unknown> | null | undefi
       const groupKind = kindFromKey(rawKey)
       if (isRecord(value)) {
         const label = value.kind ?? value.type ?? value.basis ?? value.label
-        if ('value' in value && typeof label === 'string' && (label === 'measured' || label === 'estimated')) {
+        if (
+          'value' in value &&
+          typeof label === 'string' &&
+          (label === 'measured' || label === 'estimated')
+        ) {
           out.push({ key, value: value.value, kind: label })
           continue
         }

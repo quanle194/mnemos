@@ -22,13 +22,25 @@ export function Alert({
   variant,
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof alertVariants>) {
-  return <div data-slot="alert" role="alert" className={cn(alertVariants({ variant }), className)} {...props} />
+  return (
+    <div data-slot="alert" role="alert" className={cn(alertVariants({ variant }), className)} {...props} />
+  )
 }
 
 export function AlertTitle({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('col-start-2 line-clamp-1 min-h-4 font-medium tracking-tight', className)} {...props} />
+  return (
+    <div
+      className={cn('col-start-2 line-clamp-1 min-h-4 font-medium tracking-tight', className)}
+      {...props}
+    />
+  )
 }
 
 export function AlertDescription({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('col-start-2 grid justify-items-start gap-1 text-sm opacity-90', className)} {...props} />
+  return (
+    <div
+      className={cn('col-start-2 grid justify-items-start gap-1 text-sm opacity-90', className)}
+      {...props}
+    />
+  )
 }

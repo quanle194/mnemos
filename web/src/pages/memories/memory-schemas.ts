@@ -11,7 +11,11 @@ const score = (label: string) =>
 export const proposeMemorySchema = z
   .object({
     title: z.string().trim().min(1, 'Title is required').max(300, 'Title is at most 300 characters'),
-    content: z.string().trim().min(1, 'Content is required').max(20000, 'Content is at most 20000 characters'),
+    content: z
+      .string()
+      .trim()
+      .min(1, 'Content is required')
+      .max(20000, 'Content is at most 20000 characters'),
     type: z.enum(MEMORY_TYPES),
     scope_type: z.enum(['workspace', 'project', 'agent', 'organization']),
     project_name: z.string().trim().max(200),

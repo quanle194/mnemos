@@ -77,7 +77,9 @@ function ExperienceList() {
                         {truncate(e.task, 120)}
                       </Link>
                       {e.result ? (
-                        <p className="line-clamp-1 text-xs text-muted-foreground">{truncate(e.result, 140)}</p>
+                        <p className="line-clamp-1 text-xs text-muted-foreground">
+                          {truncate(e.result, 140)}
+                        </p>
                       ) : null}
                     </TableCell>
                     <TableCell>
@@ -117,7 +119,9 @@ function EpisodeList() {
         ) : list.isError ? (
           <ErrorState error={list.error} onRetry={() => void list.refetch()} />
         ) : list.items.length === 0 ? (
-          <EmptyState title="No episodes yet">Episodes group experiences that share a task/session.</EmptyState>
+          <EmptyState title="No episodes yet">
+            Episodes group experiences that share a task/session.
+          </EmptyState>
         ) : (
           <>
             <Table data-testid="episode-list">
@@ -135,7 +139,10 @@ function EpisodeList() {
                 {list.items.map((ep) => (
                   <TableRow key={ep.id} data-testid="episode-row" data-id={ep.id}>
                     <TableCell className="max-w-md min-w-56">
-                      <Link to={`/episodes/${ep.id}`} className="font-medium hover:text-primary hover:underline">
+                      <Link
+                        to={`/episodes/${ep.id}`}
+                        className="font-medium hover:text-primary hover:underline"
+                      >
                         {truncate(ep.summary || '(no summary)', 140)}
                       </Link>
                     </TableCell>

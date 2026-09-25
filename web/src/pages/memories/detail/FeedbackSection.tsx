@@ -41,7 +41,8 @@ function FeedbackForm({ memoryId }: { memoryId: string }) {
           {
             onSuccess: (res) => {
               const m = res.memory
-              const utility = typeof m.utility_score === 'number' ? ` · utility ${formatScore(m.utility_score)}` : ''
+              const utility =
+                typeof m.utility_score === 'number' ? ` · utility ${formatScore(m.utility_score)}` : ''
               const action = typeof m.lifecycle_action === 'string' ? ` · memory ${m.lifecycle_action}` : ''
               toast.success(`Feedback recorded: ${value}${utility}${action}`)
               setValue(null)
@@ -123,7 +124,11 @@ export function FeedbackSection({ memoryId, canWrite }: { memoryId: string; canW
         ) : (
           <ul className="flex flex-col divide-y" data-testid="feedback-list">
             {q.data.map((f) => (
-              <li key={f.id} className="flex flex-col gap-1 py-2 text-sm first:pt-0 last:pb-0" data-testid="feedback-row">
+              <li
+                key={f.id}
+                className="flex flex-col gap-1 py-2 text-sm first:pt-0 last:pb-0"
+                data-testid="feedback-row"
+              >
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge kind="feedback" value={f.value} />
                   {f.agent_id ? (

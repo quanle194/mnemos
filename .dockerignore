@@ -16,7 +16,6 @@
 .env.*
 **/.env
 **/.env.*
-!**/.env.example
 infra/.env*
 *.pem
 *.key
@@ -56,5 +55,5 @@ claude
 e2e
 infra
 scripts
-*.md
-!**/README.md
+CLAUDE.md
+Makefile

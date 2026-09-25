@@ -79,13 +79,16 @@ export const patchMemory = (c: ApiClient, id: UUID, version: number, body: Memor
   c.patch<Memory>(`/v1/memories/${enc(id)}`, body, { ifMatch: version })
 export const archiveMemory = (c: ApiClient, id: UUID, version: number, reason?: string) =>
   c.delete<Memory>(`/v1/memories/${enc(id)}`, { ifMatch: version, query: { reason } })
-export const getMemoryEvidence = (c: ApiClient, id: UUID) => c.get<Evidence[]>(`/v1/memories/${enc(id)}/evidence`)
+export const getMemoryEvidence = (c: ApiClient, id: UUID) =>
+  c.get<Evidence[]>(`/v1/memories/${enc(id)}/evidence`)
 export const getMemoryHistory = (c: ApiClient, id: UUID) =>
   c.get<MemoryVersion[]>(`/v1/memories/${enc(id)}/history`)
 export const getMemoryRelations = (c: ApiClient, id: UUID) =>
   c.get<MemoryRelation[]>(`/v1/memories/${enc(id)}/relations`)
-export const getMemoryUsage = (c: ApiClient, id: UUID) => c.get<MemoryUsage[]>(`/v1/memories/${enc(id)}/usage`)
-export const getMemoryFeedback = (c: ApiClient, id: UUID) => c.get<Feedback[]>(`/v1/memories/${enc(id)}/feedback`)
+export const getMemoryUsage = (c: ApiClient, id: UUID) =>
+  c.get<MemoryUsage[]>(`/v1/memories/${enc(id)}/usage`)
+export const getMemoryFeedback = (c: ApiClient, id: UUID) =>
+  c.get<Feedback[]>(`/v1/memories/${enc(id)}/feedback`)
 export const submitFeedback = (c: ApiClient, id: UUID, body: FeedbackIn) =>
   c.post<FeedbackResult>(`/v1/memories/${enc(id)}/feedback`, body)
 export const reviewMemory = (c: ApiClient, id: UUID, body: ReviewIn) =>
@@ -143,4 +146,5 @@ export const getTrace = (c: ApiClient, id: UUID) => c.get<RetrievalTrace>(`/v1/r
 export const listEvalRuns = (c: ApiClient, params: CursorParams & { workspace_id?: UUID }) =>
   c.get<Page<EvalRun>>('/v1/evals/runs', { ...params })
 /** Readiness returns 503 with the same body shape when a dependency is down. */
-export const getReadiness = (c: ApiClient) => c.get<Readiness>('/health/ready', undefined, { acceptStatuses: [503] })
+export const getReadiness = (c: ApiClient) =>
+  c.get<Readiness>('/health/ready', undefined, { acceptStatuses: [503] })

@@ -19,7 +19,9 @@ export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const workspaceMissing =
-    workspaces.isSuccess && session.workspaceId !== null && !workspaces.data.some((w) => w.id === session.workspaceId)
+    workspaces.isSuccess &&
+    session.workspaceId !== null &&
+    !workspaces.data.some((w) => w.id === session.workspaceId)
 
   useEffect(() => setMobileOpen(false), [location.pathname])
 

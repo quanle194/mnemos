@@ -44,14 +44,20 @@ export function ExperienceDetailPage() {
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               Learning status
-              {polling ? <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="refreshing" /> : null}
+              {polling ? (
+                <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="refreshing" />
+              ) : null}
             </CardTitle>
             <CardDescription>
               Extraction → validation runs asynchronously in workers.
               {polling ? ' This page refreshes automatically until processing completes.' : null}
             </CardDescription>
           </div>
-          <StatusBadge kind="processing" value={e.processing_status} data-testid="experience-processing-status" />
+          <StatusBadge
+            kind="processing"
+            value={e.processing_status}
+            data-testid="experience-processing-status"
+          />
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <KeyValueGrid
@@ -65,10 +71,20 @@ export function ExperienceDetailPage() {
           <div>
             <h3 className="mb-2 text-sm font-medium">Derived memories</h3>
             {learning && learning.memories.length > 0 ? (
-              <ul className="flex flex-col divide-y rounded-md border" data-testid="experience-derived-memories">
+              <ul
+                className="flex flex-col divide-y rounded-md border"
+                data-testid="experience-derived-memories"
+              >
                 {learning.memories.map((m) => (
-                  <li key={m.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm" data-testid="experience-derived-memory">
-                    <Link to={`/memories/${m.id}`} className="min-w-0 flex-1 font-medium text-primary hover:underline">
+                  <li
+                    key={m.id}
+                    className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm"
+                    data-testid="experience-derived-memory"
+                  >
+                    <Link
+                      to={`/memories/${m.id}`}
+                      className="min-w-0 flex-1 font-medium text-primary hover:underline"
+                    >
                       {m.title}
                     </Link>
                     <Badge variant="outline" className="capitalize">
@@ -79,7 +95,11 @@ export function ExperienceDetailPage() {
                 ))}
               </ul>
             ) : (
-              <EmptyState title={e.processing_status === 'processed' ? 'No durable knowledge extracted' : 'Not processed yet'}>
+              <EmptyState
+                title={
+                  e.processing_status === 'processed' ? 'No durable knowledge extracted' : 'Not processed yet'
+                }
+              >
                 {e.processing_status === 'processed'
                   ? 'The extractor decided this experience holds nothing future-useful (or it merged into existing knowledge).'
                   : 'Candidate memories appear here once a worker processes this experience.'}

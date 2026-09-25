@@ -83,7 +83,8 @@ export class ApiError extends Error {
     const errs = this.details.errors
     if (!Array.isArray(errs)) return []
     return errs.filter(
-      (e): e is FieldError => typeof e === 'object' && e !== null && typeof (e as FieldError).msg === 'string',
+      (e): e is FieldError =>
+        typeof e === 'object' && e !== null && typeof (e as FieldError).msg === 'string',
     )
   }
 }

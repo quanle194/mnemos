@@ -13,7 +13,10 @@ interface Props {
 export function ScoreBar({ label, value, max = 1, className }: Props) {
   const pct = Math.max(0, Math.min(100, (value / (max || 1)) * 100))
   return (
-    <div className={cn('flex items-center gap-2 text-xs', className)} title={`${label}: ${formatScore(value, 3)}`}>
+    <div
+      className={cn('flex items-center gap-2 text-xs', className)}
+      title={`${label}: ${formatScore(value, 3)}`}
+    >
       <span className="w-24 shrink-0 truncate text-muted-foreground">{label}</span>
       <div
         className="h-2 flex-1 overflow-hidden rounded-full bg-chart-track"

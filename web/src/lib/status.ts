@@ -17,7 +17,11 @@ const DREAM: Record<string, BadgeVariant> = {
 }
 const JOB: Record<string, BadgeVariant> = { ...DREAM, failed: 'warning', dead: 'destructive' }
 const CONFLICT: Record<string, BadgeVariant> = { open: 'warning', resolved: 'success' }
-const PROCESSING: Record<string, BadgeVariant> = { pending: 'info', processed: 'success', failed: 'destructive' }
+const PROCESSING: Record<string, BadgeVariant> = {
+  pending: 'info',
+  processed: 'success',
+  failed: 'destructive',
+}
 const OUTCOME: Record<string, BadgeVariant> = {
   success: 'success',
   failure: 'destructive',

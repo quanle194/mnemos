@@ -9,7 +9,11 @@ export const SheetClose = DialogPrimitive.Close
 export const SheetTitle = DialogPrimitive.Title
 
 /** Left-side drawer (mobile navigation). */
-export function SheetContent({ className, children, ...props }: React.ComponentProps<typeof DialogPrimitive.Content>) {
+export function SheetContent({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Content>) {
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />

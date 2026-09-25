@@ -44,7 +44,10 @@ export function MemoryDetailPage() {
       </div>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight break-words sm:text-2xl" data-testid="memory-title">
+          <h1
+            className="text-xl font-semibold tracking-tight break-words sm:text-2xl"
+            data-testid="memory-title"
+          >
             {m.title}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -142,7 +145,10 @@ export function MemoryDetailPage() {
               { label: 'Updated', value: formatDateTime(m.updated_at) },
               { label: 'Project', value: <IdText id={m.project_id} /> },
               { label: 'Agent', value: <IdText id={m.agent_id} /> },
-              { label: 'Workspace', value: m.workspace_id ? <IdText id={m.workspace_id} /> : 'Organization-wide' },
+              {
+                label: 'Workspace',
+                value: m.workspace_id ? <IdText id={m.workspace_id} /> : 'Organization-wide',
+              },
             ]}
           />
         </CardContent>

@@ -244,13 +244,20 @@ services:
       MNEMOS_MCP_TRANSPORT: streamable-http
       MNEMOS_MCP_HOST: 0.0.0.0
       MNEMOS_MCP_PORT: "8765"
+      MNEMOS_MCP_PATH: /mcp
+      # Bearer token MCP clients must send. Default-empty so the file validates without the profile; the server
+      # itself refuses to start (exit 2) on a non-loopback bind without it, and deploy.sh --with-mcp checks it.
+      MNEMOS_MCP_TOKEN: ${MNEMOS_MCP_TOKEN:-}
+      # DNS-rebinding protection (Host allow-list, e.g. mnemos.example.com); empty disables the check.
+      MNEMOS_MCP_ALLOWED_HOSTS: ${MNEMOS_MCP_ALLOWED_HOSTS:-}
+      MNEMOS_MCP_ALLOWED_ORIGINS: ${MNEMOS_MCP_ALLOWED_ORIGINS:-}
     depends_on:
       api:
         condition: service_healthy
     expose:
       - "8765"
     healthcheck:
-      test: ["CMD", "python3", "-c", "import socket; socket.create_connection(('127.0.0.1', 8765), 3).close()"]
+      test: ["CMD", "mnemos-healthcheck", "http://127.0.0.1:8765/healthz"]
       interval: 20s
       timeout: 5s
       retries: 3

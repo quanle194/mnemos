@@ -25,21 +25,22 @@ export function SessionProvider({ children, initial, fetchFn }: Props) {
   const login = useCallback(
     (input: LoginInput) => {
       queryClient.clear()
-      update({ apiUrl: input.apiUrl?.trim() || null, apiKey: input.apiKey.trim(), workspaceId: input.workspaceId ?? null })
+      update({
+        apiUrl: input.apiUrl?.trim() || null,
+        apiKey: input.apiKey.trim(),
+        workspaceId: input.workspaceId ?? null,
+      })
     },
     [queryClient, update],
   )
 
-  const setWorkspace = useCallback(
-    (workspaceId: string) => {
-      setState((prev) => {
-        const next = { ...prev, workspaceId }
-        if (next.apiKey) saveSession(next)
-        return next
-      })
-    },
-    [],
-  )
+  const setWorkspace = useCallback((workspaceId: string) => {
+    setState((prev) => {
+      const next = { ...prev, workspaceId }
+      if (next.apiKey) saveSession(next)
+      return next
+    })
+  }, [])
 
   const logout = useCallback(
     (reason?: string) => {

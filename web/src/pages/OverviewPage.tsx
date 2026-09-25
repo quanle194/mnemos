@@ -14,7 +14,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatCompact, formatNumber, sumValues } from '@/lib/format'
 
-function StatTile({ id, label, value, hint, to }: { id: string; label: string; value: string; hint?: string; to?: string }) {
+function StatTile({
+  id,
+  label,
+  value,
+  hint,
+  to,
+}: {
+  id: string
+  label: string
+  value: string
+  hint?: string
+  to?: string
+}) {
   const body = (
     <Card className="h-full gap-1 py-4 transition-colors hover:bg-accent/40" data-testid={`stat-${id}`}>
       <CardContent className="flex flex-col gap-1">
@@ -27,7 +39,10 @@ function StatTile({ id, label, value, hint, to }: { id: string; label: string; v
     </Card>
   )
   return to ? (
-    <Link to={to} className="rounded-xl focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none">
+    <Link
+      to={to}
+      className="rounded-xl focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+    >
       {body}
     </Link>
   ) : (
@@ -85,7 +100,9 @@ function AuditCard({ ws }: { ws: string }) {
     <Card>
       <CardHeader className="flex-col gap-0">
         <CardTitle className="text-sm">Recent activity</CardTitle>
-        <CardDescription className="mt-1 text-xs">Audit log of state transitions in this workspace</CardDescription>
+        <CardDescription className="mt-1 text-xs">
+          Audit log of state transitions in this workspace
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {audit.isPending ? (
@@ -128,7 +145,10 @@ function AuditCard({ ws }: { ws: string }) {
                           <IdText id={log.resource_id} />
                         )}
                       </TableCell>
-                      <TableCell className="max-w-48 truncate text-muted-foreground" title={log.actor_id ?? ''}>
+                      <TableCell
+                        className="max-w-48 truncate text-muted-foreground"
+                        title={log.actor_id ?? ''}
+                      >
                         {log.actor_type}:{log.actor_id ?? '—'}
                       </TableCell>
                     </TableRow>
@@ -154,7 +174,9 @@ export function OverviewPage() {
     <>
       <PageHeader
         title="Overview"
-        description={wsName ? `Workspace “${wsName}” — memory health, learning and retrieval at a glance.` : undefined}
+        description={
+          wsName ? `Workspace “${wsName}” — memory health, learning and retrieval at a glance.` : undefined
+        }
       />
       {stats.isPending ? (
         <LoadingState rows={4} />
@@ -162,7 +184,11 @@ export function OverviewPage() {
         <ErrorState error={stats.error} onRetry={() => void stats.refetch()} />
       ) : (
         <>
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Key metrics" data-testid="overview-stats">
+          <section
+            className="grid grid-cols-2 gap-3 md:grid-cols-4"
+            aria-label="Key metrics"
+            data-testid="overview-stats"
+          >
             <StatTile
               id="active-memories"
               label="Active memories"
@@ -246,10 +272,22 @@ export function OverviewPage() {
               testId="dist-experiences-outcome"
               order={OUTCOMES}
             />
-            <DistributionCard title="Feedback by value" data={stats.data.feedback_by_value} testId="dist-feedback" />
+            <DistributionCard
+              title="Feedback by value"
+              data={stats.data.feedback_by_value}
+              testId="dist-feedback"
+            />
             <DistributionCard title="Jobs by status" data={stats.data.jobs_by_status} testId="dist-jobs" />
-            <DistributionCard title="Dreams by status" data={stats.data.dreams_by_status} testId="dist-dreams" />
-            <DistributionCard title="Conflicts by status" data={stats.data.conflicts_by_status} testId="dist-conflicts" />
+            <DistributionCard
+              title="Dreams by status"
+              data={stats.data.dreams_by_status}
+              testId="dist-dreams"
+            />
+            <DistributionCard
+              title="Conflicts by status"
+              data={stats.data.conflicts_by_status}
+              testId="dist-conflicts"
+            />
           </section>
         </>
       )}

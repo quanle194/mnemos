@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import { useApiClient } from '@/auth/session-context'
 import * as api from '../endpoints'
 import { qk } from '../keys'
@@ -9,7 +10,9 @@ export const LEARNING_POLL_MS = 2000
 export const LEARNING_FAILED_POLL_MS = 10_000
 
 /** Poll while learning has not finished: fast while pending, slow after a failure (jobs may be retried). */
-export function learningPollInterval(exp: Pick<ExperienceDetail, 'processing_status'> | undefined): number | false {
+export function learningPollInterval(
+  exp: Pick<ExperienceDetail, 'processing_status'> | undefined,
+): number | false {
   if (!exp) return false
   if (exp.processing_status === 'processed') return false
   return exp.processing_status === 'failed' ? LEARNING_FAILED_POLL_MS : LEARNING_POLL_MS
@@ -18,17 +21,38 @@ export function learningPollInterval(exp: Pick<ExperienceDetail, 'processing_sta
 export function useExperienceList(ws: UUID, outcome?: string) {
   const client = useApiClient()
   return useCursorList<Experience>(qk.experiences.list(ws, outcome), (cursor) =>
-    api.listExperiences(client, { workspace_id: ws, outcome: outcome || undefined, limit: PAGE_SIZE, cursor }),
+    api.listExperiences(client, {
+      workspace_id: ws,
+      outcome: outcome || undefined,
+      limit: PAGE_SIZE,
+      cursor,
+    }),
   )
 }
 
 export function useExperience(id: UUID) {
   const client = useApiClient()
-  return useQuery({
+  const qc = useQueryClient()
+  const query = useQuery({
     queryKey: qk.experiences.detail(id),
     queryFn: () => api.getExperience(client, id),
-    refetchInterval: (query) => learningPollInterval(query.state.data),
+    refetchInterval: (q) => learningPollInterval(q.state.data),
   })
+
+  // Learning finished: derived candidate memories now exist, refresh lists/stats once.
+  const status = query.data?.processing_status
+  const previous = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (!status) return
+    if (previous.current && previous.current !== 'processed' && status === 'processed') {
+      void qc.invalidateQueries({ queryKey: ['experiences', 'list'] })
+      void qc.invalidateQueries({ queryKey: qk.memories.all })
+      void qc.invalidateQueries({ queryKey: ['stats'] })
+    }
+    previous.current = status
+  }, [status, qc])
+
+  return query
 }
 
 export function useCreateExperience() {

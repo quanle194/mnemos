@@ -72,13 +72,23 @@ export function MemoryActions({ memory, caps }: { memory: Memory; caps: MemoryCa
           <Button size="sm" onClick={() => setOpen('approve')} data-testid="memory-approve-button">
             <Check /> Approve
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setOpen('reject')} data-testid="memory-reject-button">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setOpen('reject')}
+            data-testid="memory-reject-button"
+          >
             <X /> Reject
           </Button>
         </>
       ) : null}
       {promotable ? (
-        <Button size="sm" variant="secondary" onClick={() => setOpen('promote')} data-testid="memory-promote-button">
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => setOpen('promote')}
+          data-testid="memory-promote-button"
+        >
           <ArrowUpCircle /> Promote to L4
         </Button>
       ) : null}
@@ -88,7 +98,12 @@ export function MemoryActions({ memory, caps }: { memory: Memory; caps: MemoryCa
         </Button>
       ) : null}
       {caps.canModify && !terminal ? (
-        <Button size="sm" variant="outline" onClick={() => setOpen('archive')} data-testid="memory-archive-button">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setOpen('archive')}
+          data-testid="memory-archive-button"
+        >
           <Archive /> {memory.status === 'candidate' ? 'Reject / archive' : 'Archive'}
         </Button>
       ) : null}

@@ -99,7 +99,9 @@ export function ConflictDetailPage() {
         <StatusBadge kind="conflict" value={c.status} data-testid="conflict-status" />
         <Badge variant="outline">{humanize(c.conflict_type)}</Badge>
         {typeof c.analysis_json.similarity === 'number' ? (
-          <span className="text-sm text-muted-foreground">similarity {formatScore(c.analysis_json.similarity)}</span>
+          <span className="text-sm text-muted-foreground">
+            similarity {formatScore(c.analysis_json.similarity)}
+          </span>
         ) : null}
         <span className="text-sm text-muted-foreground">
           opened <TimeAgo iso={c.created_at} />
@@ -116,9 +118,13 @@ export function ConflictDetailPage() {
           <AlertDescription>
             <p>
               <span className="font-medium">Judgment:</span> {String(judgment.relation ?? '—')}
-              {typeof judgment.confidence === 'number' ? ` (confidence ${formatScore(judgment.confidence)})` : ''}
+              {typeof judgment.confidence === 'number'
+                ? ` (confidence ${formatScore(judgment.confidence)})`
+                : ''}
             </p>
-            {typeof judgment.rationale === 'string' ? <p className="text-muted-foreground">{judgment.rationale}</p> : null}
+            {typeof judgment.rationale === 'string' ? (
+              <p className="text-muted-foreground">{judgment.rationale}</p>
+            ) : null}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -128,7 +134,9 @@ export function ConflictDetailPage() {
           <Card data-testid="conflict-resolve">
             <CardHeader className="flex-col">
               <CardTitle className="text-base">Resolve</CardTitle>
-              <CardDescription>Resolution is transactional and audited; both memories keep their history.</CardDescription>
+              <CardDescription>
+                Resolution is transactional and audited; both memories keep their history.
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
@@ -172,7 +180,9 @@ export function ConflictDetailPage() {
             </CardContent>
           </Card>
         ) : (
-          <p className="text-sm text-muted-foreground">Resolving conflicts requires the memory:review permission.</p>
+          <p className="text-sm text-muted-foreground">
+            Resolving conflicts requires the memory:review permission.
+          </p>
         )
       ) : (
         <Card data-testid="conflict-resolution">
@@ -185,9 +195,15 @@ export function ConflictDetailPage() {
           <CardContent className="flex flex-col gap-2">
             <p className="text-sm">
               <span className="font-medium">
-                {typeof c.resolution_json.resolution === 'string' ? humanize(c.resolution_json.resolution) : '—'}
+                {typeof c.resolution_json.resolution === 'string'
+                  ? humanize(c.resolution_json.resolution)
+                  : '—'}
               </span>
-              {c.resolution_json.auto === true ? <Badge variant="muted" className="ml-2">automatic</Badge> : null}
+              {c.resolution_json.auto === true ? (
+                <Badge variant="muted" className="ml-2">
+                  automatic
+                </Badge>
+              ) : null}
               {typeof c.resolution_json.by === 'string' ? (
                 <span className="text-muted-foreground"> by {c.resolution_json.by}</span>
               ) : null}
@@ -203,8 +219,8 @@ export function ConflictDetailPage() {
         <CardHeader className="flex-col">
           <CardTitle className="text-base">Analysis</CardTitle>
           <CardDescription>
-            Detector output (similarity, rule signals, LLM judgment). Candidate <IdText id={c.candidate_memory_id} /> vs
-            existing <IdText id={c.existing_memory_id} />.
+            Detector output (similarity, rule signals, LLM judgment). Candidate{' '}
+            <IdText id={c.candidate_memory_id} /> vs existing <IdText id={c.existing_memory_id} />.
           </CardDescription>
         </CardHeader>
         <CardContent>

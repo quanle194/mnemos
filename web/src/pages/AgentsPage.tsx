@@ -26,7 +26,9 @@ function AgentsCard({ ws, canCreate }: { ws: string; canCreate: boolean }) {
     <Card>
       <CardHeader className="flex-col">
         <CardTitle className="text-base">Agents</CardTitle>
-        <CardDescription>Actors that record experiences and retrieve context in this workspace.</CardDescription>
+        <CardDescription>
+          Actors that record experiences and retrieve context in this workspace.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {canCreate ? (
@@ -60,7 +62,13 @@ function AgentsCard({ ws, canCreate }: { ws: string; canCreate: boolean }) {
             </div>
             <div className="flex w-32 flex-col gap-1.5">
               <Label htmlFor="agent-kind">Kind</Label>
-              <Input id="agent-kind" value={kind} maxLength={50} onChange={(e) => setKind(e.target.value)} data-testid="agent-kind" />
+              <Input
+                id="agent-kind"
+                value={kind}
+                maxLength={50}
+                onChange={(e) => setKind(e.target.value)}
+                data-testid="agent-kind"
+              />
             </div>
             <Button type="submit" disabled={create.isPending || !name.trim()} data-testid="agent-submit">
               <Plus /> Add agent
@@ -77,7 +85,9 @@ function AgentsCard({ ws, canCreate }: { ws: string; canCreate: boolean }) {
         ) : q.isError ? (
           <ErrorState error={q.error} onRetry={() => void q.refetch()} />
         ) : q.data.length === 0 ? (
-          <EmptyState title="No agents yet">Agents are created automatically when they first record an experience.</EmptyState>
+          <EmptyState title="No agents yet">
+            Agents are created automatically when they first record an experience.
+          </EmptyState>
         ) : (
           <Table data-testid="agent-list">
             <TableHeader>
@@ -119,7 +129,9 @@ function ProjectsCard({ ws, canCreate }: { ws: string; canCreate: boolean }) {
     <Card>
       <CardHeader className="flex-col">
         <CardTitle className="text-base">Projects</CardTitle>
-        <CardDescription>Project scope sits between workspace and agent in the scope hierarchy.</CardDescription>
+        <CardDescription>
+          Project scope sits between workspace and agent in the scope hierarchy.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {canCreate ? (
@@ -202,7 +214,10 @@ export function AgentsPage() {
   const canCreate = can('experience:write')
   return (
     <>
-      <PageHeader title="Agents & projects" description="Identities and project scopes within the active workspace." />
+      <PageHeader
+        title="Agents & projects"
+        description="Identities and project scopes within the active workspace."
+      />
       <div className="grid gap-5 lg:grid-cols-2">
         <AgentsCard ws={ws} canCreate={canCreate} />
         <ProjectsCard ws={ws} canCreate={canCreate} />

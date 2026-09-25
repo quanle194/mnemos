@@ -130,6 +130,13 @@ for kind in LLM EMBEDDING; do
     *) problems+=("${kind}_PROVIDER must be fake|openai|ollama (got '$provider')") ;;
   esac
 done
+if [[ " ${PROFILES[*]} " == *" mcp "* ]]; then
+  mcp_token=$(val MNEMOS_MCP_TOKEN)
+  [[ ${#mcp_token} -ge 32 ]] || problems+=("MNEMOS_MCP_TOKEN must be set (>= 32 chars, e.g. openssl rand -hex 32) for --with-mcp")
+  unset mcp_token
+  [[ -n "$(val MNEMOS_MCP_API_KEY)" ]] || warnings+=("MNEMOS_MCP_API_KEY is empty: MCP tools will get 401 from the API until an agent key is configured")
+  [[ "$(val MCP_ROUTE disabled)" == enabled ]] || warnings+=("--with-mcp but MCP_ROUTE is not 'enabled': the MCP server runs but /mcp is not routed")
+fi
 if [[ "$(val MCP_ROUTE disabled)" == enabled && " ${PROFILES[*]} " != *" mcp "* ]]; then
   warnings+=("MCP_ROUTE=enabled but --with-mcp not given: /mcp will return 502 until the mcp service runs")
 fi
@@ -179,7 +186,15 @@ ok "preflight passed: project=$MNEMOS_PROJECT version=$VERSION (previous: ${PREV
 if [[ $NO_BUILD -eq 1 ]]; then
   STAGE="pull images"
   banner "pull images ($VERSION)"
-  compose "${PROFILE_ARGS[@]}" pull
+  # Registry images are preferred; images already present locally (docker load, air-gapped hosts) are accepted.
+  compose "${PROFILE_ARGS[@]}" pull --ignore-pull-failures || warn "some images could not be pulled"
+  missing=()
+  while read -r img; do
+    [[ -n "$img" ]] || continue
+    docker image inspect "$img" >/dev/null 2>&1 || missing+=("$img")
+  done < <(compose "${PROFILE_ARGS[@]}" config --images | sort -u)
+  [[ ${#missing[@]} -eq 0 ]] || die "images neither pullable nor present locally: ${missing[*]}"
+  ok "all images present for $VERSION"
 else
   STAGE="build images"
   banner "build images ($VERSION)"
@@ -253,6 +268,11 @@ fi
 
 STAGE="done"
 banner "deployed $VERSION"
+if [[ -n "$PREVIOUS_VERSION" && "$PREVIOUS_VERSION" != "$VERSION" ]]; then
+  app_rollback="scripts/upgrade.sh --rollback --to $PREVIOUS_VERSION --env-file $MNEMOS_ENV_FILE --project $MNEMOS_PROJECT"
+else
+  app_rollback="n/a (no different previous release is running)"
+fi
 if [[ -n "$PRE_BACKUP" ]]; then
   data_rollback="scripts/restore.sh --target live --file $PRE_BACKUP --env-file $MNEMOS_ENV_FILE --project $MNEMOS_PROJECT"
 else
@@ -265,7 +285,7 @@ Release:    $VERSION  (previous: ${PREVIOUS_VERSION:-none})
 Backup:     ${PRE_BACKUP:-none (fresh database or --skip-backup)}
 
 Rollback (application only, when the schema change was additive / expand-phase):
-  scripts/upgrade.sh --rollback${PREVIOUS_VERSION:+ --to $PREVIOUS_VERSION} --env-file $MNEMOS_ENV_FILE --project $MNEMOS_PROJECT
+  $app_rollback
 Rollback (data, restores the pre-migration backup):
   $data_rollback
 First workspace/API key (once):
