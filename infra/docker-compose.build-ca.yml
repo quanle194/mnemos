@@ -1,0 +1,29 @@
+# Optional compose override for building images behind a TLS-intercepting (corporate) proxy.
+# Supplies an extra CA bundle to the image builds as a BuildKit secret; it is never stored in an image layer.
+#
+# Used automatically by the scripts when MNEMOS_BUILD_CA_FILE is set:
+#   MNEMOS_BUILD_CA_FILE=/etc/ssl/certs/corp-ca.pem scripts/deploy.sh
+# or manually:
+#   MNEMOS_BUILD_CA_FILE=/path/ca.pem docker compose -p mnemos -f infra/docker-compose.prod.yml \
+#     -f infra/docker-compose.build-ca.yml --env-file .env build
+
+services:
+  migrate:
+    build:
+      secrets: [extra_ca]
+  api:
+    build:
+      secrets: [extra_ca]
+  worker:
+    build:
+      secrets: [extra_ca]
+  mcp:
+    build:
+      secrets: [extra_ca]
+  web:
+    build:
+      secrets: [extra_ca]
+
+secrets:
+  extra_ca:
+    file: ${MNEMOS_BUILD_CA_FILE:?set MNEMOS_BUILD_CA_FILE to the CA bundle path}
