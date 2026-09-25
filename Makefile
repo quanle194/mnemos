@@ -2,6 +2,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 .ONESHELL:
+.SHELLFLAGS := -eu -o pipefail -c
 
 UV            ?= uv
 ENV_FILE      ?= .env
@@ -41,8 +42,8 @@ dev: dev-deps ## Run API, worker and dashboard dev server with hot reload (Ctrl+
 lint: ## Lint + format check (ruff, eslint, shellcheck)
 	$(UV) run ruff check backend sdk/python mcp-server evals
 	$(UV) run ruff format --check backend sdk/python mcp-server evals
-	cd web && npm run lint
-	cd sdk/typescript && npm run lint
+	(cd web && npm run lint)
+	(cd sdk/typescript && npm run lint)
 	if command -v shellcheck >/dev/null; then shellcheck scripts/*.sh; else $(UV) run --with shellcheck-py shellcheck scripts/*.sh; fi
 
 format: ## Auto-format Python code
@@ -51,16 +52,16 @@ format: ## Auto-format Python code
 
 typecheck: ## Static type checks (mypy, tsc)
 	$(UV) run mypy backend/app sdk/python/mnemos_sdk mcp-server/mnemos_mcp evals/mnemos_evals
-	cd web && npm run typecheck
-	cd sdk/typescript && npm run typecheck
-	cd e2e && npm run typecheck
+	(cd web && npm run typecheck)
+	(cd sdk/typescript && npm run typecheck)
+	(cd e2e && npm run typecheck)
 
 test: ## Unit tests (no infrastructure needed): backend unit, SDKs, MCP, dashboard
 	$(UV) run pytest backend/tests/unit -q
 	$(UV) run pytest sdk/python/tests -q
 	$(UV) run pytest mcp-server/tests -q
-	cd web && npm test
-	cd sdk/typescript && npm test
+	(cd web && npm test)
+	(cd sdk/typescript && npm test)
 
 test-db: ## Start disposable Postgres(pgvector)+Redis for integration tests
 	docker inspect mnemos-test-pg >/dev/null 2>&1 || docker run -d --name mnemos-test-pg -e POSTGRES_USER=mnemos \
@@ -85,8 +86,8 @@ eval: ## Run the Run-A -> learn -> Run-B learning eval against EVAL_URL (needs A
 	  --output artifacts/eval-report.json
 
 build: ## Build production images, dashboard bundle and TS SDK
-	cd web && npm run build
-	cd sdk/typescript && npm run build
+	(cd web && npm run build)
+	(cd sdk/typescript && npm run build)
 	$(COMPOSE_PROD) build
 
 env: ## Create .env with generated internal secrets (scripts/init-env.sh; provider keys stay operator-supplied)
