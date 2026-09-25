@@ -57,7 +57,7 @@ class Settings:
     max_retries: int = 3
     transport: Transport = "stdio"
     host: str = "127.0.0.1"
-    port: int = 8001
+    port: int = 8765
     http_path: str = "/mcp"
     token: str | None = field(default=None, repr=False)
     allow_unauthenticated: bool = False
@@ -83,7 +83,7 @@ class Settings:
                 raise ConfigError(f"MNEMOS_WORKSPACE_ID must be a UUID, got {workspace_id!r}") from exc
 
         try:
-            port = int(env.get("MNEMOS_MCP_PORT", "8001"))
+            port = int(env.get("MNEMOS_MCP_PORT", "8765"))
             timeout = float(env.get("MNEMOS_TIMEOUT", "30"))
             max_retries = int(env.get("MNEMOS_MAX_RETRIES", "3"))
         except ValueError as exc:
@@ -95,7 +95,7 @@ class Settings:
         if not http_path.startswith("/"):
             http_path = "/" + http_path
 
-        log_level = env.get("MNEMOS_MCP_LOG_LEVEL", "INFO").strip().upper()
+        log_level = (env.get("MNEMOS_MCP_LOG_LEVEL") or env.get("LOG_LEVEL") or "INFO").strip().upper()
         if log_level not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
             raise ConfigError(f"MNEMOS_MCP_LOG_LEVEL invalid: {log_level!r}")
 

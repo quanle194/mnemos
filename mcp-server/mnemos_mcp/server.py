@@ -43,8 +43,19 @@ log = logging.getLogger("mnemos_mcp")
 Json = dict[str, Any]
 
 MemoryType = Literal[
-    "fact", "preference", "procedure", "rule", "constraint", "decision", "lesson", "pattern", "warning", "failure",
-    "success", "relationship", "context",
+    "fact",
+    "preference",
+    "procedure",
+    "rule",
+    "constraint",
+    "decision",
+    "lesson",
+    "pattern",
+    "warning",
+    "failure",
+    "success",
+    "relationship",
+    "context",
 ]
 ProposalScope = Literal["workspace", "project", "agent"]
 Outcome = Literal["success", "failure", "partial", "unknown"]
@@ -123,8 +134,24 @@ async def _call_resource_api(fn: Callable[[], Awaitable[Any]]) -> Any:
 
 def _memory_view(m: Json) -> Json:
     """The fields of a memory an agent needs, with provenance/trust signals kept next to the content."""
-    keys = ("id", "type", "title", "content", "status", "review_state", "scope_type", "layer", "trust_score",
-            "confidence", "importance", "utility_score", "version", "valid_from", "valid_until", "updated_at")
+    keys = (
+        "id",
+        "type",
+        "title",
+        "content",
+        "status",
+        "review_state",
+        "scope_type",
+        "layer",
+        "trust_score",
+        "confidence",
+        "importance",
+        "utility_score",
+        "version",
+        "valid_from",
+        "valid_until",
+        "updated_at",
+    )
     return {k: m.get(k) for k in keys if k in m}
 
 
@@ -132,8 +159,9 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
     """Build the MCP server. ``api`` is injectable for tests; by default it is built from ``settings``."""
     settings = settings or Settings.from_env()
     if api is None:
-        api = AsyncMnemosClient(settings.api_url, settings.api_key, timeout=settings.timeout,
-                                max_retries=settings.max_retries)
+        api = AsyncMnemosClient(
+            settings.api_url, settings.api_key, timeout=settings.timeout, max_retries=settings.max_retries
+        )
     client = api
 
     mcp = MCPServer(
@@ -177,8 +205,12 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
             "notice": TRUST_NOTICE,
             "retrieval_trace_id": res.get("retrieval_trace_id"),
             "results": [
-                {**_memory_view(item["memory"]), "score": item.get("score"), "scores": item.get("scores"),
-                 "reasons": item.get("reasons")}
+                {
+                    **_memory_view(item["memory"]),
+                    "score": item.get("score"),
+                    "scores": item.get("scores"),
+                    "reasons": item.get("reasons"),
+                }
                 for item in res.get("items", [])
             ],
         }
@@ -203,15 +235,34 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
         max_items: Annotated[int, Field(ge=1, le=100, description="Maximum memories to include.")] = 10,
     ) -> Json:
         ws = workspace(workspace_id)
-        extra: Json = {"project_id": project_id, "agent_id": agent_id, "session_id": session_id,
-                       "memory_types": memory_types, "max_items": max_items}
+        extra: Json = {
+            "project_id": project_id,
+            "agent_id": agent_id,
+            "session_id": session_id,
+            "memory_types": memory_types,
+            "max_items": max_items,
+        }
         res = await _call_tool_api(lambda: client.context(ws, query, token_budget=token_budget, **extra))
         return {
             "notice": TRUST_NOTICE,
             "context": res.get("context", ""),
             "memories": [
-                {k: m.get(k) for k in ("id", "type", "title", "status", "scope_type", "trust_score", "confidence",
-                                       "score", "reasons", "tokens") if k in m}
+                {
+                    k: m.get(k)
+                    for k in (
+                        "id",
+                        "type",
+                        "title",
+                        "status",
+                        "scope_type",
+                        "trust_score",
+                        "confidence",
+                        "score",
+                        "reasons",
+                        "tokens",
+                    )
+                    if k in m
+                }
                 for m in res.get("memories", [])
             ],
             "token_estimate": res.get("token_estimate"),
@@ -234,16 +285,24 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
     )
     async def memory_remember(
         title: Annotated[str, Field(min_length=1, max_length=300, description="Short, specific title.")],
-        content: Annotated[str, Field(min_length=1, max_length=20000, description="The memory itself, "
-                                      "stated as a fact/lesson/procedure with its conditions.")],
+        content: Annotated[
+            str,
+            Field(
+                min_length=1,
+                max_length=20000,
+                description="The memory itself, stated as a fact/lesson/procedure with its conditions.",
+            ),
+        ],
         type: Annotated[MemoryType, Field(description="Memory type.")] = "fact",
         workspace_id: WorkspaceArg = None,
         project_id: Annotated[uuid.UUID | None, Field(description="Project the memory belongs to.")] = None,
         agent_id: Annotated[uuid.UUID | None, Field(description="Agent the memory belongs to.")] = None,
         scope_type: Annotated[
             ProposalScope | None,
-            Field(description="Visibility scope. Default: project if project_id is set, else agent if agent_id is "
-                              "set, else workspace."),
+            Field(
+                description="Visibility scope. Default: project if project_id is set, else agent if agent_id is "
+                "set, else workspace."
+            ),
         ] = None,
         confidence: Annotated[float, Field(ge=0, le=1, description="Your confidence it is correct.")] = 0.6,
         importance: Annotated[float, Field(ge=0, le=1, description="How important it is.")] = 0.5,
@@ -272,8 +331,14 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
             "metadata": {"proposed_via": "mcp:memory_remember"},
         }
         if evidence_excerpt:
-            extra["evidence"] = [{"source_type": "user_statement", "source_id": "mcp:memory_remember",
-                                  "relation": "supports", "excerpt": evidence_excerpt}]
+            extra["evidence"] = [
+                {
+                    "source_type": "user_statement",
+                    "source_id": "mcp:memory_remember",
+                    "relation": "supports",
+                    "excerpt": evidence_excerpt,
+                }
+            ]
         mem = await _call_tool_api(
             lambda: client.remember(ws, type, title, content, idempotency_key=idempotency_key, **extra)
         )
@@ -325,9 +390,17 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
     ) -> Json:
         ws = workspace(workspace_id)
         extra: Json = {
-            "observation": observation, "action": action, "result": result, "project_id": project_id,
-            "project_name": project_name, "agent_id": agent_id, "agent_name": agent_name, "session_id": session_id,
-            "task_id": task_id, "importance": importance, "metadata": {"recorded_via": "mcp:memory_experience"},
+            "observation": observation,
+            "action": action,
+            "result": result,
+            "project_id": project_id,
+            "project_name": project_name,
+            "agent_id": agent_id,
+            "agent_name": agent_name,
+            "session_id": session_id,
+            "task_id": task_id,
+            "importance": importance,
+            "metadata": {"recorded_via": "mcp:memory_experience"},
         }
         res = await _call_tool_api(
             lambda: client.experience(ws, task, outcome, idempotency_key=idempotency_key, **extra)
@@ -345,11 +418,11 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
         title="Give feedback on a memory",
         annotations=STATE_CHANGING_WRITE,
         description=(
-            "Report whether a retrieved memory helped. 'helpful' raises its utility; 'irrelevant' lowers ranking; "
-            "'incorrect'/'outdated' lower trust and repeated reports dispute it; 'harmful' immediately quarantines "
-            "it (status disputed) pending review. Mutation: appends a feedback record and adjusts that memory's "
-            "scores/status (audited and reversible by a reviewer). Give feedback only on memories you actually "
-            "retrieved and used."
+            "Report whether a retrieved memory helped. 'helpful' raises its utility and trust; 'irrelevant' lowers "
+            "its utility; 'incorrect' lowers trust and repeated reports dispute it; repeated 'outdated' reports "
+            "expire it; 'harmful' immediately quarantines it (status disputed) pending review. Mutation: appends a "
+            "feedback record and adjusts that memory's scores/status (audited and reversible by a reviewer). Give "
+            "feedback only on memories you actually retrieved and used."
         ),
     )
     async def memory_feedback(
@@ -366,14 +439,17 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
             str | None, Field(min_length=1, max_length=200, description="Optional key to dedupe retries.")
         ] = None,
     ) -> Json:
-        extra: Json = {"retrieval_trace_id": retrieval_trace_id, "agent_id": agent_id, "session_id": session_id,
-                       "task_id": task_id}
+        extra: Json = {
+            "retrieval_trace_id": retrieval_trace_id,
+            "agent_id": agent_id,
+            "session_id": session_id,
+            "task_id": task_id,
+        }
         res = await _call_tool_api(
             lambda: client.feedback(str(memory_id), value, note=note, idempotency_key=idempotency_key, **extra)
         )
         fb, mem = res.get("feedback") or {}, res.get("memory") or {}
-        return {"feedback_id": fb.get("id"), "memory_id": fb.get("memory_id"), "value": fb.get("value"),
-                "memory": mem}
+        return {"feedback_id": fb.get("id"), "memory_id": fb.get("memory_id"), "value": fb.get("value"), "memory": mem}
 
     # ------------------------------------------------------------------------------------------------ resources
     @mcp.resource(
@@ -381,7 +457,7 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
         name="workspace",
         title="Mnemos workspace",
         description="Workspace details and memory statistics (counts by status/type/layer, pending review, jobs, "
-                    "dreams, retrieval latency). Read-only data.",
+        "dreams, retrieval latency). Read-only data.",
         mime_type="application/json",
     )
     async def workspace_resource(id: str) -> str:
@@ -399,15 +475,18 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
     )
     async def project_resource(id: str) -> str:
         pid = _uuid(id, "project id")
-        page = await _call_resource_api(lambda: client.request(
-            "GET", "/v1/memories", params={"project_id": pid, "status": "active", "limit": 100}))
+        page = await _call_resource_api(
+            lambda: client.request("GET", "/v1/memories", params={"project_id": pid, "status": "active", "limit": 100})
+        )
         items = page.get("items", []) if isinstance(page, dict) else []
-        return _dumps({
-            "notice": TRUST_NOTICE,
-            "project_id": pid,
-            "memories": [_memory_view(m) for m in items],
-            "next_cursor": page.get("next_cursor") if isinstance(page, dict) else None,
-        })
+        return _dumps(
+            {
+                "notice": TRUST_NOTICE,
+                "project_id": pid,
+                "memories": [_memory_view(m) for m in items],
+                "next_cursor": page.get("next_cursor") if isinstance(page, dict) else None,
+            }
+        )
 
     @mcp.resource(
         "memory://memory/{id}",
@@ -421,19 +500,24 @@ def create_server(settings: Settings | None = None, api: AsyncMnemosClient | Non
         memory = await _call_resource_api(lambda: client.get_memory(mid))
         evidence = await _call_resource_api(lambda: client.request("GET", f"/v1/memories/{mid}/evidence"))
         history = await _call_resource_api(lambda: client.request("GET", f"/v1/memories/{mid}/history"))
-        return _dumps({
-            "notice": TRUST_NOTICE,
-            "memory": {**_memory_view(memory), "created_by_type": memory.get("created_by_type"),
-                       "metadata": memory.get("metadata_json")},
-            "evidence": [
-                {k: e.get(k) for k in ("source_type", "source_id", "relation", "weight", "excerpt", "created_at")}
-                for e in evidence or []
-            ],
-            "history": [
-                {k: v.get(k) for k in ("version", "change_reason", "actor_type", "actor_id", "created_at")}
-                for v in history or []
-            ],
-        })
+        return _dumps(
+            {
+                "notice": TRUST_NOTICE,
+                "memory": {
+                    **_memory_view(memory),
+                    "created_by_type": memory.get("created_by_type"),
+                    "metadata": memory.get("metadata_json"),
+                },
+                "evidence": [
+                    {k: e.get(k) for k in ("source_type", "source_id", "relation", "weight", "excerpt", "created_at")}
+                    for e in evidence or []
+                ],
+                "history": [
+                    {k: v.get(k) for k in ("version", "change_reason", "actor_type", "actor_id", "created_at")}
+                    for v in history or []
+                ],
+            }
+        )
 
     @mcp.custom_route("/healthz", methods=["GET"], include_in_schema=False)
     async def healthz(_request: Request) -> Response:
@@ -463,20 +547,27 @@ def build_http_app(mcp: MCPServer, settings: Settings) -> ASGIApp:
 
 async def serve(settings: Settings) -> None:
     settings.check_http_security()
-    api = AsyncMnemosClient(settings.api_url, settings.api_key, timeout=settings.timeout,
-                            max_retries=settings.max_retries)
+    api = AsyncMnemosClient(
+        settings.api_url, settings.api_key, timeout=settings.timeout, max_retries=settings.max_retries
+    )
     try:
-        mcp = create_server(settings, api)
+        mcp = create_server(settings, api)  # configures logging (to stderr) at settings.log_level
+        if settings.log_level != "DEBUG":
+            # one INFO line per upstream API call is noise in MCP client logs
+            logging.getLogger("httpx").setLevel(logging.WARNING)
         if settings.transport == "stdio":
             await mcp.run_stdio_async()
             return
         import uvicorn
 
         if not settings.token:
-            log.warning("MCP HTTP transport has no MNEMOS_MCP_TOKEN: only expose it on loopback or behind an "
-                        "authenticating proxy")
-        config = uvicorn.Config(build_http_app(mcp, settings), host=settings.host, port=settings.port,
-                                log_level=settings.log_level.lower())
+            log.warning(
+                "MCP HTTP transport has no MNEMOS_MCP_TOKEN: only expose it on loopback or behind an "
+                "authenticating proxy"
+            )
+        config = uvicorn.Config(
+            build_http_app(mcp, settings), host=settings.host, port=settings.port, log_level=settings.log_level.lower()
+        )
         log.info("mnemos-mcp listening on http://%s:%s%s", settings.host, settings.port, settings.http_path)
         await uvicorn.Server(config).serve()
     finally:
@@ -492,8 +583,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     args = parser.parse_args(argv)
     try:
         settings = Settings.from_env()
-        overrides = {k: v for k, v in {"transport": args.transport, "host": args.host, "port": args.port}.items()
-                     if v is not None}
+        overrides = {
+            k: v
+            for k, v in {"transport": args.transport, "host": args.host, "port": args.port}.items()
+            if v is not None
+        }
         if overrides:
             settings = replace(settings, **overrides)
         settings.check_http_security()

@@ -925,7 +925,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "mcp", specifier = ">=1.6" },
+    { name = "mcp", specifier = ">=2.2,<3" },
     { name = "mnemos-sdk", editable = "sdk/python" },
 ]
 

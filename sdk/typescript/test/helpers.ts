@@ -14,7 +14,8 @@ export function scriptedFetch(...steps: Step[]) {
   const calls: Call[] = [];
   const queue = [...steps];
   const fetch = vi.fn((url: string, init: FetchInitLike): Promise<FetchResponseLike> => {
-    calls.push({ url, init });
+    // Snapshot per call: the client may reuse one headers object across retries.
+    calls.push({ url, init: { ...init, headers: { ...init.headers } } });
     const step = queue.shift();
     if (step === undefined) return Promise.reject(new Error(`unexpected fetch call #${String(calls.length)}: ${url}`));
     if (step instanceof Error) return Promise.reject(step);

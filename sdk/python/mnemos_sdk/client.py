@@ -25,6 +25,17 @@ def _clean(d: Mapping[str, Any]) -> Json:
     return {k: (str(v) if isinstance(v, uuid.UUID) else v) for k, v in d.items() if v is not None}
 
 
+def _retry_after(resp: httpx.Response, default: float, cap: float = 60.0) -> float:
+    """Honour Retry-After (seconds) on 429/503, bounded; otherwise exponential backoff delay."""
+    value = resp.headers.get("Retry-After")
+    if value:
+        try:
+            return min(cap, max(0.0, float(value)))
+        except ValueError:
+            pass
+    return default
+
+
 def _raise_for(resp: httpx.Response) -> None:
     if resp.status_code < 400:
         return
@@ -99,10 +110,11 @@ class MnemosClient(_Base):
                     raise
             else:
                 if resp.status_code in RETRY_STATUS and retry and attempt < self.max_retries:
-                    time.sleep(float(resp.headers.get("Retry-After", delay)) if resp.status_code == 429 else delay)
-                else:
-                    _raise_for(resp)
-                    return resp.json() if resp.content else None
+                    time.sleep(_retry_after(resp, delay))
+                    delay *= 2
+                    continue
+                _raise_for(resp)
+                return resp.json() if resp.content else None
             time.sleep(delay)
             delay *= 2
         raise RuntimeError("unreachable")
@@ -320,10 +332,12 @@ class AsyncMnemosClient(_Base):
                     raise
             else:
                 if resp.status_code in RETRY_STATUS and retry and attempt < self.max_retries:
-                    pass
-                else:
-                    _raise_for(resp)
-                    return resp.json() if resp.content else None
+                    wait = _retry_after(resp, delay)
+                    await asyncio.sleep(wait)
+                    delay *= 2
+                    continue
+                _raise_for(resp)
+                return resp.json() if resp.content else None
             await asyncio.sleep(delay)
             delay *= 2
         raise RuntimeError("unreachable")

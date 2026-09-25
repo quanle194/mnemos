@@ -114,3 +114,41 @@ def test_wait_for_learning(monkeypatch: pytest.MonkeyPatch) -> None:
 
     res = make(handler).wait_for_learning("e", timeout=5)
     assert res["learning"]["memories"][0]["status"] == "active" and calls["exp"] == 2
+
+
+def test_retry_after_is_honoured(monkeypatch: pytest.MonkeyPatch) -> None:
+    sleeps: list[float] = []
+    monkeypatch.setattr("time.sleep", sleeps.append)
+    n = {"c": 0}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        n["c"] += 1
+        if n["c"] == 1:
+            return httpx.Response(429, headers={"Retry-After": "7"}, json={"error": {"code": "rate_limited"}})
+        return httpx.Response(200, json={"id": "m"})
+
+    assert make(handler).get_memory("m") == {"id": "m"}
+    assert sleeps == [7.0]
+
+
+async def test_async_client_retries_and_honours_retry_after(monkeypatch: pytest.MonkeyPatch) -> None:
+    from mnemos_sdk import AsyncMnemosClient
+
+    sleeps: list[float] = []
+
+    async def fake_sleep(s: float) -> None:
+        sleeps.append(s)
+
+    monkeypatch.setattr("asyncio.sleep", fake_sleep)
+    keys: list[str | None] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        keys.append(req.headers.get("Idempotency-Key"))
+        if len(keys) == 1:
+            return httpx.Response(503, headers={"Retry-After": "2"})
+        return httpx.Response(201, json={"ok": True})
+
+    c = AsyncMnemosClient("http://api", "k", transport=httpx.MockTransport(handler))
+    assert await c.experience("ws", "t", "success") == {"ok": True}
+    assert sleeps == [2.0] and keys[0] == keys[1]
+    await c.aclose()

@@ -482,6 +482,17 @@ describe("retries", () => {
     expect(f2.calls).toHaveLength(1);
   });
 
+  it("never retries a low-level PATCH even when it carries an idempotency key", async () => {
+    const f = scriptedFetch(apiError(503, "unavailable", "down"), json(200, memoryJson()));
+    await expect(
+      client(f.fetch).request("PATCH", `/v1/memories/${MEM}`, {
+        body: { title: "x" },
+        headers: { "If-Match": '"3"', "Idempotency-Key": "k" },
+      }),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(f.calls).toHaveLength(1);
+  });
+
   it("never retries an unsafe low-level write that has no idempotency key", async () => {
     const f = scriptedFetch(apiError(503, "unavailable", "down"), json(201, {}));
     await expect(client(f.fetch).request("POST", "/v1/memories/m/relations", { body: {} })).rejects.toMatchObject({
