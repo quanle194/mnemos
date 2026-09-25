@@ -1,0 +1,25 @@
+uv run pytest backend/tests/unit -q
+uv run pytest sdk/python/tests -q
+uv run pytest mcp-server/tests -q
+(cd web && npm test)
+(cd sdk/typescript && npm test)
+......................................................................   [100%]
+70 passed in 3.50s
+........                                                                 [100%]
+8 passed in 0.05s
+..............................................                           [100%]
+46 passed in 2.90s
+> mnemos-web@0.1.0 test
+> vitest run
+ RUN  v4.1.11 /tmp/claude-0/-home-user-mnemos/e6ad2cdf-e4f4-587b-844a-1220357afe5d/scratchpad/final/web
+ Test Files  13 passed (13)
+      Tests  71 passed (71)
+   Start at  21:23:06
+   Duration  11.49s (transform 3.11s, setup 1.85s, import 6.53s, tests 17.05s, environment 5.90s)
+> @mnemos/sdk@0.1.0 test
+> vitest run
+ RUN  v4.1.11 /tmp/claude-0/-home-user-mnemos/e6ad2cdf-e4f4-587b-844a-1220357afe5d/scratchpad/final/sdk/typescript
+ Test Files  2 passed (2)
+      Tests  43 passed (43)
+   Start at  21:23:18
+   Duration  536ms (transform 303ms, setup 0ms, import 347ms, tests 194ms, environment 0ms)

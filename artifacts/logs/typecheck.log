@@ -1,0 +1,11 @@
+uv run mypy backend/app sdk/python/mnemos_sdk mcp-server/mnemos_mcp evals/mnemos_evals
+(cd web && npm run typecheck)
+(cd sdk/typescript && npm run typecheck)
+(cd e2e && npm run typecheck)
+Success: no issues found in 82 source files
+> mnemos-web@0.1.0 typecheck
+> tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json
+> @mnemos/sdk@0.1.0 typecheck
+> tsc -p tsconfig.json --noEmit
+> typecheck
+> tsc --noEmit

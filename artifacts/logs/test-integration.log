@@ -1,0 +1,12 @@
+make[1]: Entering directory '/tmp/claude-0/-home-user-mnemos/e6ad2cdf-e4f4-587b-844a-1220357afe5d/scratchpad/final'
+docker inspect mnemos-test-pg >/dev/null 2>&1 || docker run -d --name mnemos-test-pg -e POSTGRES_USER=mnemos \
+  -e POSTGRES_PASSWORD=mnemos -e POSTGRES_DB=mnemos -p 127.0.0.1:55432:5432 pgvector/pgvector:0.8.0-pg16
+docker inspect mnemos-test-redis >/dev/null 2>&1 || docker run -d --name mnemos-test-redis \
+  -p 127.0.0.1:56379:6379 redis:7.4-alpine
+for i in $(seq 1 60); do pg_isready -h 127.0.0.1 -p 55432 -q 2>/dev/null && break; \
+  docker exec mnemos-test-pg pg_isready -U mnemos -q 2>/dev/null && break; sleep 1; done
+6002e09074301b72e65166ee2d0a2fe189c61b243cf983dc7b693ef1d3b4d202
+4894b1485c002ae27607b362b41b3e058beb8b4c1963e7c92b660c91b8e24d4d
+make[1]: Leaving directory '/tmp/claude-0/-home-user-mnemos/e6ad2cdf-e4f4-587b-844a-1220357afe5d/scratchpad/final'
+........................                                                 [100%]
+24 passed in 9.28s

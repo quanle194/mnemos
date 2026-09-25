@@ -18,7 +18,7 @@ TEST_ENV      := MNEMOS_TEST_ADMIN_DSN=postgresql://mnemos:mnemos@127.0.0.1:$(TE
 EVAL_URL      ?= http://localhost:18080/api
 NODE_DIRS     := web sdk/typescript e2e
 
-.PHONY: help setup env deploy dev dev-deps lint format typecheck test test-db test-db-down test-integration test-e2e eval \
+.PHONY: audit help setup env deploy dev dev-deps lint format typecheck test test-db test-db-down test-integration test-e2e eval \
         build up down migrate smoke backup backup-test logs ps clean openapi
 
 help: ## Show this help
@@ -119,6 +119,12 @@ logs: ## Tail production logs
 
 ps: ## Show production services
 	$(COMPOSE_PROD) ps
+
+audit: ## Dependency vulnerability audit (pip-audit on the locked export, npm audit)
+	$(UV) export --all-packages --no-dev --no-hashes --no-emit-workspace -q > .audit-requirements.txt
+	uvx pip-audit -r .audit-requirements.txt --disable-pip --no-deps; rc=$$?; rm -f .audit-requirements.txt; test $$rc -eq 0
+	(cd web && npm audit)
+	(cd sdk/typescript && npm audit)
 
 openapi: ## Regenerate docs/openapi.json from the FastAPI app
 	$(UV) run python -c "import json; from app.main import create_app; json.dump(create_app().openapi(), open('docs/openapi.json','w'), indent=1)"

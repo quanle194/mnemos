@@ -1,0 +1,11 @@
+uv run ruff check backend sdk/python mcp-server evals
+uv run ruff format --check backend sdk/python mcp-server evals
+(cd web && npm run lint)
+(cd sdk/typescript && npm run lint)
+if command -v shellcheck >/dev/null; then shellcheck scripts/*.sh; else uv run --with shellcheck-py shellcheck scripts/*.sh; fi
+All checks passed!
+106 files already formatted
+> mnemos-web@0.1.0 lint
+> eslint . --max-warnings=0
+> @mnemos/sdk@0.1.0 lint
+> eslint .

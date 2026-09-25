@@ -1,0 +1,40 @@
+  ✓  8 [chromium] › tests/05-restart-persistence.spec.ts:4:1 › scenario 10: restart containers/workers; persisted state and queued jobs stay consistent (7.0s)
+  ✓  9 [chromium] › tests/06-dashboard.spec.ts:4:1 › dashboard: login, provenance/history, feedback, conflict resolution, dreams, graph (7.0s)
+
+  9 passed (20.9s)
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m
+21:24:55 [e2e.sh] OK E2E passed
+
+==== learning eval (Run A -> learn -> Run B) against the production-mode stack ====
+{
+  "families": 5,
+  "measured": {
+    "run_b_task_success_rate": 1.0,
+    "run_b_repeated_error_rate": 0.0,
+    "control_repeated_error_rate": 1.0,
+    "relevant_memory_recall": 1.0,
+    "mean_precision_at_k": 1.0,
+    "false_memory_rate": 0.0,
+    "stale_memory_use_rate": 0.0,
+    "run_b_tool_calls_total": 5,
+    "control_tool_calls_total": 22,
+    "context_latency_ms_p50": 22.65,
+    "context_latency_ms_p95": 30.12,
+    "learning_latency_ms_p50": 366.41,
+    "learning_latency_ms_p95": 390.32,
+    "memories_learned_active": 5,
+    "tool_call_reduction": 0.773
+  },
+  "estimated": {
+    "note": "token counts are chars/4 estimates of the simulated agent transcript (no real LLM calls); they are NOT measured token or cost savings",
+    "run_b_tokens_total_est": 1120,
+    "control_tokens_total_est": 563,
+    "token_change_ratio_est": 1.989
+  },
+  "passed": true
+}
+21:24:58 [e2e.sh] OK eval passed

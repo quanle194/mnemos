@@ -1,9 +1,9 @@
 {
   "name": "learning-transfer-eval",
-  "run_id": "62182c04",
-  "api_url": "http://localhost:18080/api",
-  "workspace_id": "01a0da74-fdef-7c81-b599-fbeb4c395594",
-  "duration_s": 2.61,
+  "run_id": "31a9eeb8",
+  "api_url": "http://localhost/api",
+  "workspace_id": "01a0da71-997a-7df2-b004-c8d0fafb7a69",
+  "duration_s": 2.86,
   "summary": {
     "families": 5,
     "measured": {
@@ -16,10 +16,10 @@
       "stale_memory_use_rate": 0.0,
       "run_b_tool_calls_total": 5,
       "control_tool_calls_total": 22,
-      "context_latency_ms_p50": 22.65,
-      "context_latency_ms_p95": 30.12,
-      "learning_latency_ms_p50": 366.41,
-      "learning_latency_ms_p95": 390.32,
+      "context_latency_ms_p50": 25.77,
+      "context_latency_ms_p95": 38.35,
+      "learning_latency_ms_p50": 380.69,
+      "learning_latency_ms_p95": 388.9,
       "memories_learned_active": 5,
       "tool_call_reduction": 0.773
     },
@@ -60,7 +60,7 @@
       },
       "learned_memories": [
         {
-          "id": "01a0da74-ff52-7f73-ad24-6c050544e050",
+          "id": "01a0da71-9b5e-70d0-b69e-6184076d7b15",
           "status": "active",
           "type": "lesson",
           "title": "Lesson: Deploy billing-api to staging"
@@ -68,10 +68,10 @@
       ],
       "run_b_context": {
         "selected": [
-          "01a0da74-ff52-7f73-ad24-6c050544e050"
+          "01a0da71-9b5e-70d0-b69e-6184076d7b15"
         ],
         "token_estimate": 165,
-        "trace_id": "01a0da75-00b3-7752-be30-c2b2b49ae73a"
+        "trace_id": "01a0da71-9cb1-7f02-88ed-641b332e9134"
       },
       "relevant_recalled": true,
       "precision": 1.0,
@@ -106,7 +106,7 @@
       },
       "learned_memories": [
         {
-          "id": "01a0da75-012f-7f51-a864-670dcef23165",
+          "id": "01a0da71-9d29-76f0-96df-263e883655ed",
           "status": "active",
           "type": "procedure",
           "title": "How to: Install dependencies for the admin dashboard web app"
@@ -114,10 +114,10 @@
       ],
       "run_b_context": {
         "selected": [
-          "01a0da75-012f-7f51-a864-670dcef23165"
+          "01a0da71-9d29-76f0-96df-263e883655ed"
         ],
         "token_estimate": 170,
-        "trace_id": "01a0da75-0286-7dd3-b0af-95d5227e7067"
+        "trace_id": "01a0da71-9e7d-7170-881e-143329496ce1"
       },
       "relevant_recalled": true,
       "precision": 1.0,
@@ -152,7 +152,7 @@
       },
       "learned_memories": [
         {
-          "id": "01a0da75-02ee-7353-b21a-4e035d30e341",
+          "id": "01a0da71-9f03-7be3-a4a6-8572b2be04aa",
           "status": "active",
           "type": "lesson",
           "title": "Lesson: Build the docker image for the search-indexer service"
@@ -160,10 +160,10 @@
       ],
       "run_b_context": {
         "selected": [
-          "01a0da75-02ee-7353-b21a-4e035d30e341"
+          "01a0da71-9f03-7be3-a4a6-8572b2be04aa"
         ],
         "token_estimate": 176,
-        "trace_id": "01a0da75-0449-7b10-95d1-f29adb6cd5aa"
+        "trace_id": "01a0da71-a06e-7692-bd7f-1dcc0b690006"
       },
       "relevant_recalled": true,
       "precision": 1.0,
@@ -198,7 +198,7 @@
       },
       "learned_memories": [
         {
-          "id": "01a0da75-04b1-7512-9300-5b3351928809",
+          "id": "01a0da71-a0e4-7792-ba8a-795a3695929f",
           "status": "active",
           "type": "procedure",
           "title": "How to: Fetch invoices from the partner billing API"
@@ -206,10 +206,10 @@
       ],
       "run_b_context": {
         "selected": [
-          "01a0da75-04b1-7512-9300-5b3351928809"
+          "01a0da71-a0e4-7792-ba8a-795a3695929f"
         ],
         "token_estimate": 173,
-        "trace_id": "01a0da75-0603-73b2-805d-5ef70a8a79c1"
+        "trace_id": "01a0da71-a253-7dc2-bdf5-c4db692aa489"
       },
       "relevant_recalled": true,
       "precision": 1.0,
@@ -244,7 +244,7 @@
       },
       "learned_memories": [
         {
-          "id": "01a0da75-065f-7313-8dff-1dff9080ac33",
+          "id": "01a0da71-a2c2-7ec2-b4a4-724e8e67098b",
           "status": "active",
           "type": "lesson",
           "title": "Lesson: Export the full customers table to the data lake"
@@ -252,10 +252,10 @@
       ],
       "run_b_context": {
         "selected": [
-          "01a0da75-065f-7313-8dff-1dff9080ac33"
+          "01a0da71-a2c2-7ec2-b4a4-724e8e67098b"
         ],
         "token_estimate": 166,
-        "trace_id": "01a0da75-07b3-73a2-bc79-47b588fc64b2"
+        "trace_id": "01a0da71-a416-7c41-b064-0ff83befbd82"
       },
       "relevant_recalled": true,
       "precision": 1.0,
@@ -264,7 +264,7 @@
     }
   ],
   "bad_memory_ids": [
-    "01a0da74-fe7a-78e1-b825-dd872a1fe9e6",
-    "01a0da74-fec3-7080-8cab-001b19456ea8"
+    "01a0da71-9a4b-77c2-aa17-e98516386283",
+    "01a0da71-9ab9-7043-8b4b-a46cfb456d50"
   ]
 }
