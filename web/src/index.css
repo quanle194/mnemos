@@ -1,0 +1,141 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+  --color-chart-track: var(--chart-track);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.985 0.002 95);
+  --foreground: oklch(0.18 0.005 95);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.005 95);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.005 95);
+  --primary: oklch(0.52 0.16 255);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.004 95);
+  --secondary-foreground: oklch(0.22 0.005 95);
+  --muted: oklch(0.955 0.004 95);
+  --muted-foreground: oklch(0.45 0.008 95);
+  --accent: oklch(0.945 0.006 95);
+  --accent-foreground: oklch(0.22 0.005 95);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.45 0.13 145);
+  --warning: oklch(0.55 0.12 75);
+  --border: oklch(0.9 0.006 95);
+  --input: oklch(0.88 0.006 95);
+  --ring: oklch(0.52 0.16 255);
+  --sidebar: oklch(0.97 0.003 95);
+  --sidebar-foreground: oklch(0.25 0.005 95);
+  --sidebar-accent: oklch(0.925 0.006 95);
+  --sidebar-border: oklch(0.9 0.006 95);
+  /* Categorical chart slots (validated order, light surface). */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #4a3aa7;
+  --chart-8: #e34948;
+  --chart-track: #e1e0d9;
+  color-scheme: light;
+}
+
+.dark {
+  --background: oklch(0.16 0.002 95);
+  --foreground: oklch(0.97 0.003 95);
+  --card: oklch(0.205 0.003 95);
+  --card-foreground: oklch(0.97 0.003 95);
+  --popover: oklch(0.22 0.003 95);
+  --popover-foreground: oklch(0.97 0.003 95);
+  --primary: oklch(0.66 0.15 255);
+  --primary-foreground: oklch(0.15 0.01 255);
+  --secondary: oklch(0.27 0.004 95);
+  --secondary-foreground: oklch(0.97 0.003 95);
+  --muted: oklch(0.27 0.004 95);
+  --muted-foreground: oklch(0.74 0.01 95);
+  --accent: oklch(0.29 0.004 95);
+  --accent-foreground: oklch(0.97 0.003 95);
+  --destructive: oklch(0.66 0.19 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.72 0.17 145);
+  --warning: oklch(0.8 0.14 80);
+  --border: oklch(1 0 0 / 11%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.66 0.15 255);
+  --sidebar: oklch(0.19 0.003 95);
+  --sidebar-foreground: oklch(0.93 0.003 95);
+  --sidebar-accent: oklch(0.27 0.004 95);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  /* Same eight hues stepped for the dark surface. */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+  --chart-track: #2c2c2a;
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body {
+    @apply bg-background text-foreground;
+  }
+  body {
+    @apply min-h-screen font-sans antialiased;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

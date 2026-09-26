@@ -1,0 +1,16 @@
+==== backup drill: backup ====
+==== backup mnemos/mnemos -> /home/user/mnemos/backups/mnemos-mnemos-20260925T211945Z-backup-test.dump ====
+21:19:45 [backup.sh] OK pg_restore -l: 204 TOC entries, table data present for 15 key tables
+21:19:45 [backup.sh] OK dump 104K in 0s, sha256 d3de9265b8a60a21..., manifest mnemos-mnemos-20260925T211945Z-backup-test.manifest.json
+==== backup drill: isolated restore verification ====
+==== isolated restore verification of mnemos-mnemos-20260925T211945Z-backup-test.dump ====
+21:19:46 [restore.sh] OK sha256 checksum matches
+21:19:47 [restore.sh] OK pg_restore: restored in 0s into isolated database
+21:19:48 [restore.sh] OK alembic_version: 0001 (matches manifest)
+21:19:49 [restore.sh] OK schema == live head: 0001
+21:19:49 [restore.sh] OK core tables: 15 present
+21:19:51 [restore.sh] OK row counts == manifest: agents=7 api_keys=3 audit_logs=59 conflicts=0 dream_jobs=12 episodes=2 experiences=4 memories=4 memory_evidence=6 memory_feedback=0 memory_relations=0 memory_versions=12 organizations=3 projects=4 workspaces=4
+21:19:51 [restore.sh] OK pgvector: extension 0.8.0, vector distance operator works
+21:19:51 [restore.sh] OK backup mnemos-mnemos-20260925T211945Z-backup-test.dump VERIFIED by isolated restore
+21:19:51 [backup-test.sh] OK backup drill PASSED in 7s: /home/user/mnemos/backups/mnemos-mnemos-20260925T211945Z-backup-test.dump
+21:19:51 [backup-test.sh] verification report: {  "file": "mnemos-mnemos-20260925T211945Z-backup-test.dump",  "verified_at": "2026-09-25T21:19:51Z",  "result": "pass",  "postgres_image": "pgvector/pgvector:0.8.0-pg16",  "checks": [    {      "status": "PASS",      "check": "pg_restore",      "detail": "restored in 0s into isolated database"    }...

@@ -1,0 +1,5 @@
+# ShellCheck settings for the ops scripts: follow the shared helper library
+# (`source .../lib/common.sh`) so plain `shellcheck scripts/*.sh` works from any directory.
+external-sources=true
+source-path=SCRIPTDIR
+source-path=SCRIPTDIR/..

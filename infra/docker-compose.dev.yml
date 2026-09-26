@@ -1,0 +1,153 @@
+# Mnemos local development stack (NOT for production - see infra/docker-compose.prod.yml).
+#
+# Data services only (default) - postgres+pgvector and redis on loopback-only host ports:
+#   docker compose -f infra/docker-compose.dev.yml up -d
+#   export DATABASE_URL=postgresql+asyncpg://mnemos:mnemos@127.0.0.1:${DEV_PG_PORT:-5433}/mnemos
+#   export REDIS_URL=redis://127.0.0.1:${DEV_REDIS_PORT:-6380}/0
+#   uv run mnemos migrate && uv run mnemos api --reload
+#
+# Full stack with hot reload (profile "app"): migrate, api (uvicorn --reload), worker (watchfiles restart on change)
+# and the Vite dev server (web, proxies /api to the api container):
+#   docker compose -f infra/docker-compose.dev.yml --profile app up --build
+#   open http://localhost:${DEV_WEB_PORT:-5173}  (API: http://localhost:${DEV_API_PORT:-8000})
+#
+# Ports are configurable (DEV_PG_PORT, DEV_REDIS_PORT, DEV_API_PORT, DEV_WEB_PORT) and bound to 127.0.0.1 only.
+# Tear down: docker compose -f infra/docker-compose.dev.yml --profile app down   (add -v to drop the dev data)
+
+name: mnemos-dev
+
+x-dev-env: &dev-env
+  APP_ENV: development
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  LOG_JSON: "false"
+  DATABASE_URL: postgresql+asyncpg://mnemos:mnemos@postgres:5432/mnemos
+  REDIS_URL: redis://redis:6379/0
+  API_BOOTSTRAP_SECRET: ${API_BOOTSTRAP_SECRET:-change-me}
+  PUBLIC_WEB_URL: http://localhost:${DEV_WEB_PORT:-5173}
+  PUBLIC_API_URL: http://localhost:${DEV_API_PORT:-8000}
+  CORS_ALLOWED_ORIGINS: http://localhost:${DEV_WEB_PORT:-5173}
+  ALLOWED_HOSTS: "*"
+  LLM_PROVIDER: ${LLM_PROVIDER:-fake}
+  LLM_BASE_URL: ${LLM_BASE_URL:-}
+  LLM_API_KEY: ${LLM_API_KEY:-}
+  LLM_MODEL: ${LLM_MODEL:-}
+  EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-fake}
+  EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-}
+  EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-fake-embedding}
+  EMBEDDING_DIMENSIONS: ${EMBEDDING_DIMENSIONS:-384}
+  WORKER_HEALTH_PORT: "8001"
+
+x-dev-app: &dev-app
+  image: mnemos/api:dev
+  build:
+    context: ..
+    dockerfile: backend/Dockerfile
+  profiles: ["app"]
+  environment: *dev-env
+  working_dir: /app/backend
+  # Source is bind-mounted read-only over the image copy, so edits on the host are picked up live.
+  volumes:
+    - ../backend/app:/app/backend/app:ro
+    - ../backend/alembic:/app/backend/alembic:ro
+    - ../sdk/python/mnemos_sdk:/app/sdk/python/mnemos_sdk:ro
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg16
+    environment:
+      POSTGRES_USER: mnemos
+      POSTGRES_PASSWORD: mnemos
+      POSTGRES_DB: mnemos
+    ports:
+      - "127.0.0.1:${DEV_PG_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -h 127.0.0.1 -U mnemos -d mnemos"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${DEV_REDIS_PORT:-6380}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  migrate:
+    <<: *dev-app
+    command: ["migrate"]
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  api:
+    <<: *dev-app
+    command: ["api", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${DEV_API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "mnemos-healthcheck", "http://127.0.0.1:8000/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  worker:
+    <<: *dev-app
+    # restart the worker whenever backend Python code changes
+    entrypoint: ["watchfiles", "--filter", "python", "mnemos worker", "/app/backend/app"]
+    command: []
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mnemos-healthcheck", "http://127.0.0.1:8001/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  web:
+    image: node:22-alpine
+    profiles: ["app"]
+    working_dir: /src/web
+    command: ["sh", "-c", "npm ci --no-audit --no-fund && exec npm run dev -- --host 0.0.0.0 --port 5173 --strictPort"]
+    environment:
+      MNEMOS_DEV_API_TARGET: http://api:8000
+      # Optional: extra CA bundle path (inside the container) for npm behind a TLS-intercepting proxy.
+      NODE_EXTRA_CA_CERTS: ${DEV_NODE_EXTRA_CA_CERTS:-}
+    volumes:
+      - ../web:/src/web
+      # container-local node_modules (platform-specific binaries must not clash with the host's)
+      - web_node_modules:/src/web/node_modules
+    ports:
+      - "127.0.0.1:${DEV_WEB_PORT:-5173}:5173"
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  pgdata: {}
+  redisdata: {}
+  web_node_modules: {}

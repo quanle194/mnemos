@@ -1,0 +1,42 @@
+==== preflight ====
+21:15:51 [deploy.sh] WARN LLM_PROVIDER=fake: deterministic built-in provider (configure a real provider for production quality)
+21:15:51 [deploy.sh] WARN EMBEDDING_PROVIDER=fake: deterministic built-in provider (configure a real provider for production quality)
+21:15:51 [deploy.sh] WARN MNEMOS_MCP_API_KEY is empty: MCP tools will get 401 from the API until an agent key is configured
+21:15:51 [deploy.sh] WARN --with-mcp but MCP_ROUTE is not 'enabled': the MCP server runs but /mcp is not routed
+21:15:51 [deploy.sh] WARN HTTP-only mode (SITE_ADDRESS=:80): use only on a private network or behind a TLS-terminating tunnel
+21:15:51 [deploy.sh] OK preflight passed: project=mnemos version=3550405-dirty (previous: none) env=/home/user/mnemos/.env
+==== build images (3550405-dirty) ====
+==== data services ====
+21:16:15 [deploy.sh] OK postgres and redis healthy
+==== migrate ====
+21:16:18 [deploy.sh] OK migrations applied: 0001
+==== start application services ====
+21:16:34 [deploy.sh] OK edge readiness: {"status":"ok","checks":{"database":{"ok":true,"pgvector":"0.8.0","migration":"0001"},"queue":{"succeeded":1},"redis":{"ok":true},"workers":["8ca9381aad63-6-1d1ae6"],"providers":{"llm":"fake","embeddi
+21:16:34 [deploy.sh] OK release recorded: MNEMOS_VERSION=3550405-dirty (/home/user/mnemos/backups/state/releases.log)
+==== smoke test ====
+21:16:34 [smoke-prod.sh] OK web root - HTTP 200, SPA shell served
+21:16:34 [smoke-prod.sh] OK web SPA fallback - deep link -> index.html
+21:16:34 [smoke-prod.sh] OK api live - /api/health/live ok
+21:16:34 [smoke-prod.sh] OK api ready (db+redis) - migration=0001 pgvector=0.8.0 llm=fake
+21:16:34 [smoke-prod.sh] OK metrics not public - /api/metrics -> 404 at the edge
+21:16:34 [smoke-prod.sh] OK tenant bootstrap - organization mnemos-smoke, workspace smoke-20260925211634-8836
+21:16:34 [smoke-prod.sh] OK ingest experience - experience 01a0da6d-5b03-7373-a03b-750cbf7e41be queued (job 01a0da6d-5b06-7fc1-b01a-d8bad03f3798)
+21:16:37 [smoke-prod.sh] OK learn -> active memory - memory 01a0da6d-5b51-7fd3-9324-8a580e519fef active after 3s
+21:16:37 [smoke-prod.sh] OK retrieve (agent B) - memory 01a0da6d-5b51-7fd3-9324-8a580e519fef in context, ~168 tokens, trace 01a0da6d-640e-7341-b153-8c19105b2337
+21:16:37 [smoke-prod.sh] OK port 5432 closed - postgres not reachable on localhost
+21:16:37 [smoke-prod.sh] OK port 6379 closed - redis not reachable on localhost
+21:16:37 [smoke-prod.sh] OK only caddy publishes - project mnemos: 7 containers, no other published ports
+PASS  web root                     HTTP 200, SPA shell served
+PASS  web SPA fallback             deep link -> index.html
+PASS  api live                     /api/health/live ok
+PASS  api ready (db+redis)         migration=0001 pgvector=0.8.0 llm=fake
+PASS  metrics not public           /api/metrics -> 404 at the edge
+PASS  tenant bootstrap             organization mnemos-smoke, workspace smoke-20260925211634-8836
+PASS  ingest experience            experience 01a0da6d-5b03-7373-a03b-750cbf7e41be queued (job 01a0da6d-5b06-7fc1-b01a-d8bad03f3798)
+PASS  learn -> active memory       memory 01a0da6d-5b51-7fd3-9324-8a580e519fef active after 3s
+PASS  retrieve (agent B)           memory 01a0da6d-5b51-7fd3-9324-8a580e519fef in context, ~168 tokens, trace 01a0da6d-640e-7341-b153-8c19105b2337
+PASS  port 5432 closed             postgres not reachable on localhost
+PASS  port 6379 closed             redis not reachable on localhost
+PASS  only caddy publishes         project mnemos: 7 containers, no other published ports
+passed=12 failed=0
+==== deployed 3550405-dirty ====

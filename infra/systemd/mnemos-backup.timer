@@ -1,0 +1,12 @@
+# Runs mnemos-backup.service nightly (02:30 local time + up to 20 min jitter); catches up after downtime.
+[Unit]
+Description=Nightly Mnemos backup
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+RandomizedDelaySec=20m
+Persistent=true
+Unit=mnemos-backup.service
+
+[Install]
+WantedBy=timers.target

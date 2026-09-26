@@ -1,0 +1,24 @@
+# Nightly Mnemos backup: consistent pg_dump + manifest + checksum, verified by an isolated restore
+# (scripts/backup.sh --verify), retention pruning and the optional BACKUP_OFFSITE_CMD hook.
+# Installed by scripts/bootstrap-ubuntu.sh (paths/user substituted); manual install:
+#   sudo cp infra/systemd/mnemos-backup.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now mnemos-backup.timer
+# Check: systemctl list-timers mnemos-backup.timer; journalctl -u mnemos-backup.service
+[Unit]
+Description=Mnemos PostgreSQL backup with isolated restore verification
+Wants=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+User=mnemos
+Group=mnemos
+WorkingDirectory=/opt/mnemos/app
+Environment=MNEMOS_PROJECT=mnemos
+ExecStart=/opt/mnemos/app/scripts/backup.sh --verify --env-file /opt/mnemos/app/.env
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+PrivateTmp=true
+TimeoutStartSec=3h

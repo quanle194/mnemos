@@ -1,0 +1,47 @@
+==== preflight ====
+21:18:43 [deploy.sh] WARN LLM_PROVIDER=fake: deterministic built-in provider (configure a real provider for production quality)
+21:18:43 [deploy.sh] WARN EMBEDDING_PROVIDER=fake: deterministic built-in provider (configure a real provider for production quality)
+21:18:43 [deploy.sh] WARN MNEMOS_MCP_API_KEY is empty: MCP tools will get 401 from the API until an agent key is configured
+21:18:43 [deploy.sh] WARN --with-mcp but MCP_ROUTE is not 'enabled': the MCP server runs but /mcp is not routed
+21:18:43 [deploy.sh] WARN HTTP-only mode (SITE_ADDRESS=:80): use only on a private network or behind a TLS-terminating tunnel
+21:18:43 [deploy.sh] OK preflight passed: project=mnemos version=ed3510c (previous: 3550405-dirty) env=/home/user/mnemos/.env
+==== build images (ed3510c) ====
+==== data services ====
+21:19:05 [deploy.sh] OK postgres and redis healthy
+==== pre-migration backup ====
+==== backup mnemos/mnemos -> /home/user/mnemos/backups/mnemos-mnemos-20260925T211906Z-pre-deploy-ed3510c.dump ====
+21:19:06 [backup.sh] OK pg_restore -l: 204 TOC entries, table data present for 15 key tables
+21:19:06 [backup.sh] OK dump 99K in 0s, sha256 c08fa5dab664a2d1..., manifest mnemos-mnemos-20260925T211906Z-pre-deploy-ed3510c.manifest.json
+21:19:06 [deploy.sh] OK pre-migration backup: /home/user/mnemos/backups/mnemos-mnemos-20260925T211906Z-pre-deploy-ed3510c.dump
+==== migrate ====
+21:19:09 [deploy.sh] OK migrations applied: 0001
+==== start application services ====
+21:19:25 [deploy.sh] OK edge readiness: {"status":"ok","checks":{"database":{"ok":true,"pgvector":"0.8.0","migration":"0001"},"queue":{"succeeded":17},"redis":{"ok":true},"workers":["8ca9381aad63-6-1d1ae6","d28b6dbe87c6-7-39a39d"],"provider
+21:19:25 [deploy.sh] OK release recorded: MNEMOS_VERSION=ed3510c (/home/user/mnemos/backups/state/releases.log)
+==== smoke test ====
+21:19:25 [smoke-prod.sh] OK web root - HTTP 200, SPA shell served
+21:19:25 [smoke-prod.sh] OK web SPA fallback - deep link -> index.html
+21:19:25 [smoke-prod.sh] OK api live - /api/health/live ok
+21:19:25 [smoke-prod.sh] OK api ready (db+redis) - migration=0001 pgvector=0.8.0 llm=fake
+21:19:25 [smoke-prod.sh] OK metrics not public - /api/metrics -> 404 at the edge
+21:19:25 [smoke-prod.sh] OK tenant (existing key) - workspace smoke-20260925211925-10504 created
+21:19:25 [smoke-prod.sh] OK ingest experience - experience 01a0da6f-f6da-7ff1-bfec-e0085980bc1f queued (job 01a0da6f-f6dc-7270-a4c1-104f4090656d)
+21:19:28 [smoke-prod.sh] OK learn -> active memory - memory 01a0da6f-f70c-7dc2-af38-6b99a8f2eed4 active after 3s
+21:19:28 [smoke-prod.sh] OK retrieve (agent B) - memory 01a0da6f-f70c-7dc2-af38-6b99a8f2eed4 in context, ~168 tokens, trace 01a0da6f-ffaa-7881-a521-b3d124afbdd8
+21:19:28 [smoke-prod.sh] OK port 5432 closed - postgres not reachable on localhost
+21:19:28 [smoke-prod.sh] OK port 6379 closed - redis not reachable on localhost
+21:19:28 [smoke-prod.sh] OK only caddy publishes - project mnemos: 7 containers, no other published ports
+PASS  web root                     HTTP 200, SPA shell served
+PASS  web SPA fallback             deep link -> index.html
+PASS  api live                     /api/health/live ok
+PASS  api ready (db+redis)         migration=0001 pgvector=0.8.0 llm=fake
+PASS  metrics not public           /api/metrics -> 404 at the edge
+PASS  tenant (existing key)        workspace smoke-20260925211925-10504 created
+PASS  ingest experience            experience 01a0da6f-f6da-7ff1-bfec-e0085980bc1f queued (job 01a0da6f-f6dc-7270-a4c1-104f4090656d)
+PASS  learn -> active memory       memory 01a0da6f-f70c-7dc2-af38-6b99a8f2eed4 active after 3s
+PASS  retrieve (agent B)           memory 01a0da6f-f70c-7dc2-af38-6b99a8f2eed4 in context, ~168 tokens, trace 01a0da6f-ffaa-7881-a521-b3d124afbdd8
+PASS  port 5432 closed             postgres not reachable on localhost
+PASS  port 6379 closed             redis not reachable on localhost
+PASS  only caddy publishes         project mnemos: 7 containers, no other published ports
+passed=12 failed=0
+==== deployed ed3510c ====

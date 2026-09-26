@@ -1,0 +1,28 @@
+==== rollback ed3510c -> 3550405-dirty ====
+21:20:01 [upgrade.sh] OK schema check: database revision 0001 is known to 3550405-dirty
+21:20:16 [upgrade.sh] OK application rolled back to 3550405-dirty (MNEMOS_VERSION updated in /home/user/mnemos/.env)
+21:20:16 [smoke-prod.sh] OK web root - HTTP 200, SPA shell served
+21:20:16 [smoke-prod.sh] OK web SPA fallback - deep link -> index.html
+21:20:16 [smoke-prod.sh] OK api live - /api/health/live ok
+21:20:16 [smoke-prod.sh] OK api ready (db+redis) - migration=0001 pgvector=0.8.0 llm=fake
+21:20:16 [smoke-prod.sh] OK metrics not public - /api/metrics -> 404 at the edge
+21:20:16 [smoke-prod.sh] OK tenant (existing key) - workspace smoke-20260925212016-18509 created
+21:20:16 [smoke-prod.sh] OK ingest experience - experience 01a0da70-bc28-77f1-8a68-b36fa73093ae queued (job 01a0da70-bc2a-71a1-a5b9-642fbeb79903)
+21:20:18 [smoke-prod.sh] OK learn -> active memory - memory 01a0da70-bc6e-7130-9cbb-e62143f0f9f8 active after 2s
+21:20:18 [smoke-prod.sh] OK retrieve (agent B) - memory 01a0da70-bc6e-7130-9cbb-e62143f0f9f8 in context, ~168 tokens, trace 01a0da70-c504-7370-8c01-6ea3299af41a
+21:20:18 [smoke-prod.sh] OK port 5432 closed - postgres not reachable on localhost
+21:20:18 [smoke-prod.sh] OK port 6379 closed - redis not reachable on localhost
+21:20:18 [smoke-prod.sh] OK only caddy publishes - project mnemos: 7 containers, no other published ports
+PASS  web root                     HTTP 200, SPA shell served
+PASS  web SPA fallback             deep link -> index.html
+PASS  api live                     /api/health/live ok
+PASS  api ready (db+redis)         migration=0001 pgvector=0.8.0 llm=fake
+PASS  metrics not public           /api/metrics -> 404 at the edge
+PASS  tenant (existing key)        workspace smoke-20260925212016-18509 created
+PASS  ingest experience            experience 01a0da70-bc28-77f1-8a68-b36fa73093ae queued (job 01a0da70-bc2a-71a1-a5b9-642fbeb79903)
+PASS  learn -> active memory       memory 01a0da70-bc6e-7130-9cbb-e62143f0f9f8 active after 2s
+PASS  retrieve (agent B)           memory 01a0da70-bc6e-7130-9cbb-e62143f0f9f8 in context, ~168 tokens, trace 01a0da70-c504-7370-8c01-6ea3299af41a
+PASS  port 5432 closed             postgres not reachable on localhost
+PASS  port 6379 closed             redis not reachable on localhost
+PASS  only caddy publishes         project mnemos: 7 containers, no other published ports
+passed=12 failed=0

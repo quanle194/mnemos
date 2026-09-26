@@ -1,0 +1,20 @@
+[project]
+name = "mnemos-mcp"
+version = "0.1.0"
+description = "MCP server exposing Mnemos memory tools"
+requires-python = ">=3.11"
+# mcp 2.x: the server uses mcp.server.mcpserver.MCPServer (FastMCP was removed in 2.0).
+dependencies = ["mcp>=2.2,<3", "mnemos-sdk"]
+
+[project.scripts]
+mnemos-mcp = "mnemos_mcp.server:main"
+
+[tool.uv.sources]
+mnemos-sdk = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["mnemos_mcp"]
